@@ -92,6 +92,7 @@ begin
   TaskExec.ExecuteTask(ttInit);
 
   TaskExec.AddTask(ttWorldUpdate);
+  TaskExec.AddTask(ttWorkDispatcher);
   AddLog('Init completed.');
 end;
 

@@ -5,7 +5,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, ComCtrls, ExtCtrls,
-  uFasade, uLogger;
+  uFasade, uLogger, uDB;
 
 type
   TMainFrm = class(TForm)
@@ -52,6 +52,8 @@ type
     procedure Timer1Timer(Sender: TObject);
     procedure btRunClick(Sender: TObject);
     procedure btDownloadSWFClick(Sender: TObject);
+    procedure btParamSaveClick(Sender: TObject);
+    procedure btParamLoadClick(Sender: TObject);
   private
     { Private declarations }
     Fasade: TMPFasade;
@@ -107,6 +109,50 @@ begin
   Fasade.DBUpdate;
 end;
 
+procedure TMainFrm.btParamLoadClick(Sender: TObject);
+var
+  db: TMPdatabase;
+begin
+  db := TMPdatabase.GetInstance;
+  if not db.Connected then db.Connect;
+  if db.Connected then
+  begin
+    edAppAuthKey.Text := db.GetParam('AppAuthKey', '');
+    edVerStat.Text := db.GetParam('VerStat', '1');
+    edVerFPStat.Text := db.GetParam('VerFPStat', '11');
+    edVerCheck.Text := db.GetParam('VerCheck', '5');
+    edVerFP.Text := db.GetParam('VerFP', 'WIN%2011,2,202,235');
+    edVKUserID.Text := db.GetParam('VKUserID', '0');
+    edRevision.Text := db.GetParam('Revision', '');
+    edVKUser.Text := db.GetParam('VKUser', '');
+    edVKPasswd.Text := db.GetParam('VKPasswd', '');
+    edVKAccessKey.Text := db.GetParam('VKAccessKey', '');
+    edVKAppID.Text := db.GetParam('VKAppID', '1858070');
+  end;
+
+end;
+
+procedure TMainFrm.btParamSaveClick(Sender: TObject);
+var
+  db: TMPdatabase;
+begin
+  db := TMPdatabase.GetInstance;
+  if not db.Connected then db.Connect;
+  if not db.Connected then exit;
+
+  db.SetParam('AppAuthKey', edAppAuthKey.Text);
+  db.SetParam('VerStat', edVerStat.Text);
+  db.SetParam('VerFPStat', edVerFPStat.Text);
+  db.SetParam('VerCheck', edVerCheck.Text);
+  db.SetParam('VerFP', edVerFP.Text);
+  db.SetParam('VKUserID', edVKUserID.Text);
+  db.SetParam('Revision', edRevision.Text);
+  db.SetParam('VKUser', edVKUser.Text);
+  db.SetParam('VKPasswd', edVKPasswd.Text);
+  db.SetParam('VKAccessKey', edVKAccessKey.Text);
+  db.SetParam('VKAppID', edVKAppID.Text);
+end;
+
 procedure TMainFrm.btRunClick(Sender: TObject);
 begin
   if Fasade = nil then btInit.Click;
@@ -119,6 +165,8 @@ procedure TMainFrm.FormCreate(Sender: TObject);
 begin
   Fasade := nil;
   FViewCnt := 0;
+
+  btParamLoad.Click;
 end;
 
 procedure TMainFrm.Timer1Timer(Sender: TObject);

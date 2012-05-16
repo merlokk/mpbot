@@ -45,13 +45,16 @@ type
     function Connect: boolean;
     procedure Commit;
 
+    function SetParam(ParamName, ParamValue: string): boolean;
+    function GetParam(ParamName: string; Default: string = ''): string;
+
     function GetRewardPoints(userid: int64): Extended;
 //    procedure SubtractReward(gift: SendGiftRec);
 
 //    function FriendsDisable: boolean;
 //    function FriendUpdate(friend: FriendRec): boolean;
-//    procedure FillGameFriends(lst: string);
-//    function FillGameFriendsFromDB: boolean;
+    procedure FillGameFriends(lst: string);
+    function FillGameFriendsFromDB: boolean;
 //    procedure SetFriendNextHelp(FriendID: int64; Date: TDateTime);
 //    function CanHelpFriend(FriendID: int64): boolean;
     function AddFriendActivityPoints(FriendID: int64): boolean;
@@ -948,7 +951,7 @@ begin
     Result := true;
   except
   end;
-end;
+end;        }
 
 procedure TMPdatabase.FillGameFriends(lst: string);
 var
@@ -1003,6 +1006,38 @@ begin
   except
   end;
 end;
- }
+
+function TMPdatabase.SetParam(ParamName, ParamValue: string): boolean;
+begin
+  Result := false;
+  if not FConnected then exit;
+  try
+    FIBQuery.SQL.Text := 'update or insert into params (id, name, ATTR_TYPE_ID, val) values ' +
+      '(gen_id(gen_params_id,1), ''' + ParamName + ''', 4, ''' + ParamValue + ''') matching (name)';
+    FIBQuery.ExecQuery;
+
+    Commit;
+    Result := true;
+  except
+  end;
+end;
+
+function TMPdatabase.GetParam(ParamName: string; Default: string = ''): string;
+begin
+  Result := Default;
+  if not FConnected then exit;
+  try
+    FIBQueryCurs.Close;
+    FIBQueryCurs.SQL.Text := 'select * from params where NAME=''' + ParamName + ''' ';
+    FIBQueryCurs.ExecQuery;
+
+    Result := FIBQueryCurs.FieldByName('VAL').AsString;
+
+    FIBQueryCurs.Close;
+  except
+    Result := Default;
+  end;
+end;
+
 
 end.

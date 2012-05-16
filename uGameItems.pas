@@ -3,7 +3,7 @@ unit uGameItems;
 interface
 uses
   Windows, SysUtils, Variants, Classes, StrUtils, superobject,
-  uDefs;
+  uDefs, uQueue;
 
 type
   TAttrType = (atNone, atBigInt, atInt, atBool, atVarchar, atFloat);
@@ -16,6 +16,8 @@ const
     'ASVARCHAR',
     'ASFLOAT');
 type
+  TMRoom = class;
+
   TAttrTransform = (attNone, attVOkv, attVOkr, attVOarray);
   TAttr = record
     ID: integer;
@@ -36,7 +38,7 @@ type
   end;
   TAttrs = array of TAttr;
 
-  TMGameItemType = (gitNone, gitFactory, gitBuilding, gitHouse);
+  TMGameItemType = (gitNone, gitPlace, gitFactory, gitBuilding, gitHouse);
   TMGameItem = class
   private
     FID: integer;
@@ -101,9 +103,11 @@ type
 
   TMField = class
   private
+    FRoom: TMRoom;
     FGameItem: TMGameItem;
     FSerial: cardinal;
     function GetFieldType: TMGameItemType;
+    procedure SetRoom(const Value: TMRoom);
 
   public
     ID: int64;
@@ -120,7 +124,10 @@ type
     BuildingPosition: Int64;
     ExtraValue: cardinal;
 
+    LastTickDT,
     LastUpdate: TDateTime;
+
+    Qu: TActionQueue;
 
     constructor Create; virtual;
     destructor Destroy; override;
@@ -133,6 +140,11 @@ type
     procedure Execute(canTick, canWork: boolean); virtual;
 
     property FieldType: TMGameItemType read GetFieldType;
+    property Room: TMRoom read FRoom write SetRoom;
+  end;
+
+  TMFieldPlace = class (TMField)
+  public
   end;
 
   TMFieldFactory = class (TMField)
@@ -141,6 +153,7 @@ type
 
   TMFieldBuilding = class (TMField)
   public
+    procedure Execute(canTick, canWork: boolean); override;
   end;
 
   TMFieldHouse = class (TMField)
@@ -207,6 +220,9 @@ type
     procedure EndFieldsUpdate(serial: cardinal);
     function GetFieldsCountByType(state: integer): integer;
     function StrFieldsStat: string;
+
+    procedure FieldsClearTick;
+    procedure FieldsExecute(canTick, canWork: boolean); virtual;
 
     property ID: integer read FID write FID;
     property FieldsCount: integer read GetFieldsCount;
@@ -716,6 +732,7 @@ end;
 
 procedure TMRoom.AddField(field: TMField);
 begin
+  field.Room := Self;
   SetLength(FItems, length(FItems) + 1);
   FItems[length(FItems) - 1] := field;
 end;
@@ -768,6 +785,22 @@ begin
         FItems[j] := FItems[j + 1];
       SetLength(FItems, length(FItems) - 1);
     end;
+end;
+
+procedure TMRoom.FieldsClearTick;
+var
+  i: Integer;
+begin
+  for i := 0 to length(FItems) - 1 do
+    FItems[i].ClearTick;
+end;
+
+procedure TMRoom.FieldsExecute(canTick, canWork: boolean);
+var
+  i: Integer;
+begin
+  for i := 0 to length(FItems) - 1 do
+    FItems[i].Execute(canTick, canWork);
 end;
 
 function TMRoom.StrFieldsStat: string;
@@ -870,18 +903,21 @@ begin
   BuildingPosition := 0;
   ExtraValue := 0;
 
+  LastTickDT := 0;
   LastUpdate := 0;
 end;
 
 procedure TMField.ClearTick;
 begin
-
+  LastTickDT := 0;
 end;
 
 constructor TMField.Create;
 begin
   inherited;
 
+  Qu := TActionQueue.GetInstance;
+  FRoom := nil;
   Clear;
 end;
 
@@ -902,6 +938,30 @@ begin
     Result := gitNone
   else
     Result := GameItem.GetItemType;
+end;
+
+procedure TMField.SetRoom(const Value: TMRoom);
+begin
+  FRoom := Value;
+end;
+
+{ TMFieldBuilding }
+
+procedure TMFieldBuilding.Execute(canTick, canWork: boolean);
+begin
+  inherited;
+
+  if canTick then
+  try
+
+  except
+  end;
+
+  if canWork then
+  try
+
+  except
+  end;
 end;
 
 end.

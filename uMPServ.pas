@@ -6,7 +6,7 @@ uses
   clHttpRequest, clGZip, clCookies, clConnection, clMultiDC, clSingleDC,
   clDownLoader, clTcpClient, clHttp,  Dialogs, StdCtrls, XMLIntf, XMLDoc,
   StrUtils,
-  uFactories, uDB, uVK, uDefs, uGameItems, uLogger;
+  uFactories, uDB, uVK, uDefs, uGameItems, uLogger, uQueue;
 
 type
   TMPServer = class
@@ -311,6 +311,13 @@ begin
         Result := true;
 
         World.SWFRevision := s;
+        if Fres.Count > 1 then
+        begin
+          s := ReplaceStr(Fres[1], ',', '');
+          if s <> '' then
+            World.SWFRevision := s;
+        end;
+
 
         break;
       end;
@@ -754,6 +761,8 @@ begin
     end;
 
     EndFieldsUpdate(ser);
+    FieldsClearTick;
+
     Result := true;
   except
   end;

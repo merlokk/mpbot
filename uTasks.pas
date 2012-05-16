@@ -4,7 +4,7 @@ interface
 uses
   SysUtils, Variants, Types, Classes, IOUtils, Forms, XMLIntf, XMLDoc, StrUtils,
   Windows,
-  uMPserv, uVK, uDB, uGameItems, uLogger;
+  uMPserv, uVK, uDB, uGameItems, uLogger, uQueue;
 
 type
   TMTaskType = (ttBaseClass, ttInitDB, ttLoadSWF,
@@ -19,8 +19,8 @@ const
     'Init',
     'WorldUpdate',
     'CurRoomWork',
-    'WhishListUpdate',
     'WorkDispatcher',
+    'WhishListUpdate',
     'GiftSend',
     'FriendHelp',
     'last');
@@ -42,6 +42,7 @@ type
     FVK: TVKAPI;
     FMPServ: TMPServer;
     FDB: TMPdatabase;
+    FQu: TActionQueue;
 
     procedure SetTaskType(AType: TMTaskType);
     procedure SetExecutionInterval(Minutes: integer; DeviationPrc: integer = 10);
@@ -51,7 +52,7 @@ type
   public
     constructor Create; virtual;
 
-    procedure SetObjects(ATaskExec: TMTaskExecutor; AVK: TVKAPI; AMPServ: TMPServer; ADB: TMPdatabase);
+    procedure SetObjects(ATaskExec: TMTaskExecutor; AVK: TVKAPI; AMPServ: TMPServer; ADB: TMPdatabase; AQu: TActionQueue);
 
     procedure Clear; virtual;
     procedure Execute;
@@ -207,7 +208,8 @@ begin
       FTaskExec,
       FVK,
       TMPServer.GetInstance,
-      TMPdatabase.GetInstance);
+      TMPdatabase.GetInstance,
+      TActionQueue.GetInstance);
     AddLog('Task added id=' + StrMTaskType[TaskType], 4);
   end;
 end;
@@ -294,9 +296,11 @@ begin
   SetTaskType(ttBaseClass);
   Clear;
 
+  FTaskExec := nil;
   FDB := nil;
   FVK := nil;
   FMPServ := nil;
+  FQu := nil;
 end;
 
 procedure TMTask.Execute;
@@ -350,12 +354,13 @@ begin
   FNextExecution := 0;
 end;
 
-procedure TMTask.SetObjects(ATaskExec: TMTaskExecutor; AVK: TVKAPI; AMPServ: TMPServer; ADB: TMPdatabase);
+procedure TMTask.SetObjects(ATaskExec: TMTaskExecutor; AVK: TVKAPI; AMPServ: TMPServer; ADB: TMPdatabase; AQu: TActionQueue);
 begin
   FTaskExec := ATaskExec;
   FVK := AVK;
   FMPServ := AMPServ;
   FDB := ADB;
+  FQu:= AQu;
 end;
 
 procedure TMTask.SetTaskType(AType: TMTaskType);
@@ -632,7 +637,7 @@ begin
   FDB.Connect;
 
   FMPServ.AppFriends := FVK.GetAppFriends;
-//  FDB.FillGameFriends(FMPServ.AppFriends);
+  FDB.FillGameFriends(FMPServ.AppFriends);
 
   // use cahed data if avaliable...
 //  Result := fvk.Authenticated or (fvk.GameFriendsCount > 0);
@@ -672,24 +677,34 @@ begin
   end;
 
   FVK.UpdateFriendsDetails(world.Friends);
+//  FDB.UpdateFriends();
 
   if world.Valid and (room0 <> nil) then
   begin
-    AddLog('avail=' + BoolToStr(room0.Avaliable, true) +
+    AddLog(
+      'valid=true' +
       ' owner(' + IntToStr(room0.Header.Level) + '):' + IntToStr(room0.Header.OwnerID) +
       ' room cnt=' + IntToStr(world.GetRoomCount) +
-      ' exp=' + IntToStr(room0.Header.Exp) +
-      ' ppl=' + IntToStr(room0.Header.GetPopulation) +
-                '(' + IntToStr(room0.Header.GetFreePopulation) + ')' +
-      ' tax=' + IntToStr(world.LastHeader.Tax) +
       ' friends=' + IntToStr(length(world.Friends)) +
-      ' fields=' + IntToStr(room0.FieldsCount) +
       ' barn=' + IntToStr(length(world.Barn)) );
 
     if length(world.AvailGift) > 0 then
       AddLog('gifts ' + world.StrGiftStat);
 
-    AddLog('fields ' + room0.StrFieldsStat);
+    for i := 0 to world.GetRoomCount - 1 do
+    begin
+      room := world.GetRoom(i);
+      if (room = nil) or (not room.Avaliable) then continue;
+
+      AddLog('avail(' + IntToStr(i) + ')=' + BoolToStr(room.Avaliable, true) +
+        ' exp(' + IntToStr(i) + ')=' + IntToStr(room.Header.Exp) +
+        ' ppl(' + IntToStr(i) + ')=' + IntToStr(room.Header.GetPopulation) +
+                  '(' + IntToStr(room.Header.GetFreePopulation) + ')' +
+        ' tax(' + IntToStr(i) + ')=' + IntToStr(room.Header.Tax) +
+        ' fields(' + IntToStr(i) + ')=' + IntToStr(room.FieldsCount)
+        );
+      AddLog('fields(' + IntToStr(i) + ') ' + room.StrFieldsStat);
+    end;
   end
   else
     AddLog('invalid room data');
@@ -737,7 +752,7 @@ begin
     AddLog('file "' + FileName +'" deleted...');
   end;
 
-  AddLog('loading SWF from server...');
+  AddLog('loading SWF from server (' + world.SWFRevisionAppID + '.swf' + ')...');
 
   res := mpsrv.LoadFile(
     'http://mb.static.socialquantum.ru/assets_vk_city_prod/app.swf?' +
@@ -756,9 +771,23 @@ begin
 end;
 
 procedure TMTaskCurRoomWork.IntExecute;
+var
+  world: TMWorld;
+  room: TMRoom;
 begin
   inherited;
 
+  world := TMWorld.GetInstance;
+  if (world = nil) or (not world.Valid) then exit;
+
+  room := world.GetRoom(FMPServ.CurrRoomID);
+  if room = nil then exit;
+
+  FQu.Clear;
+  room.FieldsExecute(true, false);
+  room.FieldsExecute(true, true);
+//  FMPServ.CheckAndPerform(FQu.GetStrData);
+  FQu.Clear;
 end;
 
 { TMTaskWorkDispatcher }

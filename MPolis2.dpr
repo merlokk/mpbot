@@ -12,7 +12,8 @@ uses
   uDB in 'uDB.pas',
   uVK in 'uVK.pas',
   uFactories in 'uFactories.pas',
-  superobject in 'JSON\superobject.pas';
+  superobject in 'JSON\superobject.pas',
+  uQueue in 'uQueue.pas';
 
 {$R *.res}
 

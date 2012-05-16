@@ -107,7 +107,6 @@ object MainFrm: TMainFrm
         Width = 182
         Height = 24
         TabOrder = 0
-        Text = 'ol@lot.kharkov.ua'
       end
       object edVKPasswd: TEdit
         Left = 123
@@ -116,7 +115,6 @@ object MainFrm: TMainFrm
         Height = 24
         PasswordChar = '*'
         TabOrder = 1
-        Text = 'close%20all'
       end
       object edVKAccessKey: TEdit
         Left = 123
@@ -124,7 +122,6 @@ object MainFrm: TMainFrm
         Width = 182
         Height = 24
         TabOrder = 2
-        Text = 'ET8HhOAeuOF4nDfS7GnT'
       end
       object edVKAppID: TEdit
         Left = 123
@@ -141,6 +138,7 @@ object MainFrm: TMainFrm
         Height = 25
         Caption = 'Save'
         TabOrder = 4
+        OnClick = btParamSaveClick
       end
       object btParamLoad: TButton
         Left = 598
@@ -149,6 +147,7 @@ object MainFrm: TMainFrm
         Height = 25
         Caption = 'Load'
         TabOrder = 5
+        OnClick = btParamLoadClick
       end
       object btInit: TButton
         Left = 111
@@ -215,7 +214,6 @@ object MainFrm: TMainFrm
         Width = 64
         Height = 24
         TabOrder = 13
-        Text = '11'
       end
       object edVerFP: TEdit
         Left = 517
@@ -223,7 +221,6 @@ object MainFrm: TMainFrm
         Width = 156
         Height = 24
         TabOrder = 14
-        Text = 'WIN%2011,1,102,63'
       end
       object cbNeedGifts: TCheckBox
         Left = 15
@@ -255,7 +252,6 @@ object MainFrm: TMainFrm
         Width = 121
         Height = 24
         TabOrder = 18
-        Text = '56895991'
       end
       object edAppAuthKey: TEdit
         Left = 424
@@ -263,7 +259,6 @@ object MainFrm: TMainFrm
         Width = 249
         Height = 24
         TabOrder = 19
-        Text = '3b4fd2ca7f718dd8a07f28c4170673c1'
       end
       object btDownloadSWF: TButton
         Left = 16

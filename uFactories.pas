@@ -148,6 +148,7 @@ begin
   end;
 
   case item.ItemType of
+    gitPlace: Result := TMFieldPlace.Create;
     gitFactory: Result := TMFieldFactory.Create;
     gitBuilding: Result := TMFieldBuilding.Create;
     gitHouse: Result := TMFieldHouse.Create;
