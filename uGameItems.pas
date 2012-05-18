@@ -16,9 +16,10 @@ const
     'ASVARCHAR',
     'ASFLOAT');
 type
+  TMWorld = class;
   TMRoom = class;
 
-  TAttrTransform = (attNone, attVOkv, attVOkr, attVOarray);
+  TAttrTransform = (attNone, attVOkv, attVOkr, attVOarray, attVOarrayKV);
   TAttr = record
     ID: integer;
     Name: string;
@@ -46,7 +47,7 @@ type
     FShopDept,
     FSuperClass,
     FRusName: string;
-    FAttr: array of TAttr;
+    FAttr: TAttrs;
 
     function GetAttrIndx(id: integer): integer; overload;
     function GetAttrIndx(name: string): integer; overload;
@@ -110,6 +111,7 @@ type
     procedure SetRoom(const Value: TMRoom);
 
   public
+    isDeny: boolean;
     ID: int64;
     Name: string;
     State,
@@ -133,6 +135,9 @@ type
     destructor Destroy; override;
 
     procedure Clear; virtual;
+
+    function GetProcessEndDT: TDateTime;
+
     property Serial: cardinal read FSerial write FSerial;
     property GameItem: TMGameItem read FGameItem write FGameItem;
 
@@ -149,15 +154,20 @@ type
 
   TMFieldFactory = class (TMField)
   public
+    procedure ChangeState(NewState: integer);
+    procedure Execute(canTick, canWork: boolean); override;
   end;
 
   TMFieldBuilding = class (TMField)
   public
+    procedure ChangeState(NewState: integer);
     procedure Execute(canTick, canWork: boolean); override;
   end;
 
   TMFieldHouse = class (TMField)
   public
+    procedure ChangeState(NewState: integer);
+    procedure Execute(canTick, canWork: boolean); override;
   end;
 
   TBarnRec = packed record
@@ -186,6 +196,7 @@ type
     SessionKey: String;
     Auto: cardinal;
     Exp: int64;
+    RoomID,
     RespectLevel,
     Level: integer;
     OwnerID: int64;
@@ -201,11 +212,13 @@ type
 
   TMRoom = class
   private
+    FWorld: TMWorld;
     FID: integer;
     FAvailable: boolean;
 
     FItems: array of TMField;
     function GetFieldsCount: integer;
+    procedure SetWorld(const Value: TMWorld);
   public
     Header: TWorldHeader;
 
@@ -222,11 +235,12 @@ type
     function StrFieldsStat: string;
 
     procedure FieldsClearTick;
-    procedure FieldsExecute(canTick, canWork: boolean); virtual;
+    procedure FieldsExecute(MaxCount: integer; canTick, canWork: boolean); virtual;
 
     property ID: integer read FID write FID;
     property FieldsCount: integer read GetFieldsCount;
     property Avaliable: boolean read FAvailable write FAvailable;
+    property World: TMWorld read FWorld write SetWorld;
   end;
 
   TMWorld = class
@@ -383,7 +397,10 @@ end;
 
 function TMGameItem.GetIsFactory: boolean;
 begin
-  Result := length(GetAttr('contracts_ary').AsString) > 0;
+  Result :=
+    (length(GetAttr('contracts_ary').AsString) > 0) and
+    canPut and
+    canPick;
 end;
 
 function TMGameItem.GetIsHouse: boolean;
@@ -519,6 +536,14 @@ begin
         end;
       attVOarray:
         if Pos('Array()', s) > 0 then s := '';
+      attVOarrayKV:
+        begin
+          if Pos('Array()', s) > 0 then s := '';
+
+          s := ReplaceStr(s, '[', '');
+          s := ReplaceStr(s, ']', '');
+          s := Trim(s);
+        end;
     end;
 
     case AType of
@@ -542,6 +567,7 @@ begin
   if Result = nil then
   begin
     Result := TMRoom.Create;
+    Result.World := Self;
     Result.ID := RoomID;
 
     SetLength(FRooms, length(FRooms) + 1);
@@ -705,6 +731,7 @@ begin
   SessionKey := '';
   Auto := 0;
   Exp := 0;
+  RoomID := -1;
   RespectLevel := 0;
   Level := 0;
   OwnerID := 0;
@@ -776,7 +803,9 @@ begin
     begin
       FItems[i].Free;
       FItems[i] := nil;
-    end;
+    end
+    else
+      FItems[i].LastUpdate := Now;
 
   for i := length(FItems) - 1 downto 0 do
     if FItems[i] = nil then
@@ -795,12 +824,19 @@ begin
     FItems[i].ClearTick;
 end;
 
-procedure TMRoom.FieldsExecute(canTick, canWork: boolean);
+procedure TMRoom.FieldsExecute(MaxCount: integer; canTick, canWork: boolean);
 var
   i: Integer;
+  Qu: TActionQueue;
 begin
+  Qu := TActionQueue.GetInstance;
   for i := 0 to length(FItems) - 1 do
+  begin
+    if (MaxCount <> 0) and (MaxCount < Qu.Count)
+    then break;
+
     FItems[i].Execute(canTick, canWork);
+  end;
 end;
 
 function TMRoom.StrFieldsStat: string;
@@ -842,6 +878,11 @@ end;
 function TMRoom.GetFieldsCount: integer;
 begin
   Result := length(FItems);
+end;
+
+procedure TMRoom.SetWorld(const Value: TMWorld);
+begin
+  FWorld := Value;
 end;
 
 function TMRoom.StartFieldsUpdate: cardinal;
@@ -889,6 +930,7 @@ begin
   FGameItem := nil;
   FSerial := 0;
 
+  isDeny := false;
   ID := 0;
   Name := '';
   State := 0;
@@ -940,6 +982,16 @@ begin
     Result := GameItem.GetItemType;
 end;
 
+function TMField.GetProcessEndDT: TDateTime;
+begin
+  if ProcessEnd <> 0 then
+    Result :=
+      LastUpdate +
+      ProcessEnd / (SecsPerDay * 1000)  // ms in a day
+  else
+    Result := 0;
+end;
+
 procedure TMField.SetRoom(const Value: TMRoom);
 begin
   FRoom := Value;
@@ -947,18 +999,206 @@ end;
 
 { TMFieldBuilding }
 
+procedure TMFieldBuilding.ChangeState(NewState: integer);
+begin
+  if State = NewState then exit;
+
+  if NewState = STATE_DIRTY then
+  begin
+    State := STATE_DIRTY;
+  end;
+
+  if NewState = STATE_ABANDONED then
+  begin
+    ProcessEnd := FGameItem.GetAttr('abandoned_length').AsInteger;
+    LastUpdate := Now;
+
+    State := STATE_ABANDONED;
+  end;
+end;
+
 procedure TMFieldBuilding.Execute(canTick, canWork: boolean);
+var
+  elm: TActionQueueElm;
 begin
   inherited;
 
+  if isDeny then exit;
+
   if canTick then
   try
+    if (State = STATE_ABANDONED) and
+       (GetProcessEndDT < Now) and
+       (GetProcessEndDT > Now - 10)
+    then
+    begin
+      elm := Qu.Add(Room.ID, ID, faTick);
+      elm.ActionDT := GetProcessEndDT;
 
+      ChangeState(STATE_DIRTY);
+    end;
   except
   end;
 
   if canWork then
   try
+    if (State = STATE_DIRTY) and
+       (GameItem.canClean)
+    then
+    begin
+      Qu.Add(Room.ID, ID, faClean,
+        GameItem.GetAttr('extra_exp').AsInteger);
+
+      ChangeState(STATE_ABANDONED);
+    end;
+  except
+  end;
+end;
+
+{ TMFieldHouse }
+
+procedure TMFieldHouse.ChangeState(NewState: integer);
+begin
+  if State = NewState then exit;
+
+  if NewState = STATE_STANDBY then
+  begin
+    State := STATE_STANDBY;
+  end;
+
+  if NewState = STATE_WORK then
+  begin
+    ProcessEnd := FGameItem.GetAttr('stage_length').AsInteger;
+    LastUpdate := Now;
+
+    State := STATE_WORK;
+  end;
+end;
+
+procedure TMFieldHouse.Execute(canTick, canWork: boolean);
+var
+  elm: TActionQueueElm;
+  aff: string;
+  ippl: integer;
+begin
+  inherited;
+
+  if isDeny then exit;
+
+  if canTick then
+  try
+    if (State = STATE_WORK) and
+       (GetProcessEndDT < Now) and
+       (GetProcessEndDT > Now - 10)
+    then
+    begin
+      elm := Qu.Add(Room.ID, ID, faTick);
+      elm.ActionDT := GetProcessEndDT;
+
+      ChangeState(STATE_STANDBY);
+    end;
+  except
+  end;
+
+  if canWork then
+  try
+    if (State = STATE_STANDBY) and
+       (GameItem.canPick) and
+       (Room.Header.GetFreePopulation > 2000)
+    then
+    begin
+      elm := Qu.Add(Room.ID, ID, faPick,
+        GameItem.GetAttr('extra_exp').AsInteger);
+      aff := '';
+      ippl := GameItem.GetAttr('population_increase').AsInteger;
+      if aff <> '' then
+      begin
+        elm.AddAttr('affect_items', aff);
+        ippl := Trunc(ippl * 1.5 + 0.5);
+      end;
+
+      Room.Header.Population := cardinal(
+        integer(Room.Header.Population) +
+        ippl);
+
+      ChangeState(STATE_WORK);
+    end;
+  except
+  end;
+end;
+
+{ TMFieldFactory }
+
+procedure TMFieldFactory.ChangeState(NewState: integer);
+begin
+  if State = NewState then exit;
+
+end;
+
+procedure TMFieldFactory.Execute(canTick, canWork: boolean);
+var
+  elm: TActionQueueElm;
+begin
+  inherited;
+
+  if isDeny then exit;
+
+  if canTick then
+  try
+    if (State = STATE_WORK) and
+       (GetProcessEndDT < Now) and
+       (GetProcessEndDT > Now - 10)
+    then
+    begin
+      elm := Qu.Add(Room.ID, ID, faTick);
+      elm.ActionDT := GetProcessEndDT;
+
+      ChangeState(STATE_ABANDONED);
+    end;
+  except
+  end;
+
+  if canWork then
+  try
+    if (State = STATE_ABANDONED) and
+       ((ContractOutput <> '') or
+        (OutputFill <> '')) and
+       (GameItem.canPick)
+    then
+    begin
+{      Qu.Add(Room.ID, ID, faPick,
+        GameItem.GetAttr('extra_exp').AsInteger);
+
+      ChangeState(STATE_STANDBY);      }
+    end;
+
+    if (State = STATE_STANDBY) and
+  //     (db.CanPut(item)) and
+       (GameItem.canPut)
+    then
+    begin
+{      Qu.Add(Room.ID, ID, faPut,
+        GameItem.GetAttr('extra_exp').AsInteger);
+    FClFields[length(FClFields) - 1].PutKlass :=
+      db.GetCPutKlass(st.fields[i].item);
+???
+    FClFields[length(FClFields) - 1].Affected :=
+      CalcFactoryAffecting(st, st.fields[i]);
+???
+      ChangeState(STATE_WORK);      }
+    end;
+
+    // Expired
+    if (State = STATE_EXPIRED) and
+       (GameItem.canPick)
+    then
+    begin
+{      Qu.Add(Room.ID, ID, faPick,
+        GameItem.GetAttr('extra_exp').AsInteger);
+
+      ChangeState(STATE_STANDBY);      }
+    end;
+
 
   except
   end;

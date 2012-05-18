@@ -59,6 +59,8 @@ type
 
     function SrvGetUserStatFirst(RoomID: integer): String;
     function SrvGetUserStat(RoomID: integer; data: string): String;
+    function SrvCheckAndPerform(Qu: TActionQueue): String;
+    function SrvCheckReqResult(data: string): boolean;
   public
     class function GetInstance: TMPServer;
     constructor Create;
@@ -71,7 +73,7 @@ type
     function GotRevisionTime: cardinal;
     function GetUserStat(World: TMWorld; RoomID: integer; StartNewSession: boolean = false): boolean;
     function GetUserStatFriend(OwnerID, FriendId: int64; data: String): String;
-    function CheckAndPerform(data: String): String;
+    function CheckAndPerform(World: TMWorld; Qu: TActionQueue): boolean;
 
     property OwnerID: string read FOwnerID write FOwnerID;
     property CurrRoomID: integer read FCurrRoomID;
@@ -123,42 +125,29 @@ implementation
 
 { TMPServer }
 
-function TMPServer.CheckAndPerform(data: String): String;
+function TMPServer.CheckAndPerform(World: TMWorld; Qu: TActionQueue): boolean;
 var
- sl: TStringList;
+  data: string;
 begin
-  Result := '';
+  Result := false;
   try
-    clHttpRequest2.Assign(clHttpRequest);
-    clHttpRequest2.Header.ContentType := 'application/x-www-form-urlencoded';
-    clHttpRequest2.AddFormField('client_performance_stats', '{"first_request":11.343,"iframe":8.871,"render":11.337,"daily":110}');
-    clHttpRequest2.AddFormField('avg_mem', GetBaseRandomStr(304844800, 100000));
-    clHttpRequest2.AddFormField('revision', FRevision);
-    clHttpRequest2.AddFormField('rand', GetRandomStr);
-    clHttpRequest2.AddFormField('version', GetNextCheckPerformVerStr);
-    clHttpRequest2.AddFormField('avg_fps', GetBaseRandomStr(8, 4));
-    clHttpRequest2.AddFormField('user_id', FOwnerID);
-    clHttpRequest2.AddFormField('room_id', IntToStr(FCurrRoomID));
-    clHttpRequest2.AddFormField('time_pl', GetPlayedTime); // time from last request in ms
-    clHttpRequest2.AddFormField('serv_ver', IntToStr(FServerVer));
-    clHttpRequest2.AddFormField('auth_key', FAuthKey);
-    clHttpRequest2.AddFormField('session_key', FSessionKey);
+    if FSessionKey = '' then exit;
 
-    FillFormData(clHttpRequest2, data);
+    data := SrvCheckAndPerform(Qu);
+    SrvCheckReqResult(data);
+    if data = '' then exit;
 
-    // номер запроса!!!
-    frn := frn + 1;
+    World.LoadFromXML(FCurrRoomID, data);
+    FSessionKey := World.LastHeader.SessionKey;
 
-    sl := TStringList.Create;
-    SendPost(
-      'http://88.212.222.164/city_server_vk_prod/check_and_perform?uid=' + FOwnerID +
-      '&crev=' + FRevision + '&fp=' + FVerFP + '&rn=' + IntToStr(Frn),
-      clHttpRequest2, sl);
-    Result := sl.Text;
-
-    sl.Free;
+    Result := true;
+    AddLog('server_time=' + IntToStr(World.LastHeader.ServerTime) +
+      ' next_tick=' + IntToStr(World.LastHeader.NextTick) +
+      ' session_key=' + World.LastHeader.SessionKey, 4);
   except
   end;
+
+
 end;
 
 procedure TMPServer.FillFormData(vHttpRequest: TclHttpRequest; data: string);
@@ -326,6 +315,105 @@ begin
   AddLog('MP revision=' + World.SrvRevision + ' ok=' + BoolToStr(Result, true));
 end;
 
+function TMPServer.SrvCheckAndPerform(Qu: TActionQueue): String;
+begin
+  Result := '';
+  try
+    clHttpRequest2.Assign(clHttpRequest);
+    clHttpRequest2.Header.ContentType := 'application/x-www-form-urlencoded';
+    clHttpRequest2.AddFormField('client_performance_stats', '{"first_request":11.343,"iframe":8.871,"render":11.337,"daily":110}');
+    clHttpRequest2.AddFormField('avg_mem', GetBaseRandomStr(304844800, 100000));
+    clHttpRequest2.AddFormField('revision', FRevision);
+    clHttpRequest2.AddFormField('rand', GetRandomStr);
+    clHttpRequest2.AddFormField('version', GetNextCheckPerformVerStr);
+    clHttpRequest2.AddFormField('avg_fps', GetBaseRandomStr(8, 4));
+    clHttpRequest2.AddFormField('user_id', FOwnerID);
+    clHttpRequest2.AddFormField('room_id', IntToStr(FCurrRoomID));
+    clHttpRequest2.AddFormField('time_pl', GetPlayedTime); // time from last request in ms
+    clHttpRequest2.AddFormField('serv_ver', IntToStr(FServerVer));
+    clHttpRequest2.AddFormField('auth_key', FAuthKey);
+    clHttpRequest2.AddFormField('session_key', FSessionKey);
+
+    Qu.FillFormData(clHttpRequest2);
+
+    // номер запроса!!!
+    frn := frn + 1;
+
+    SendPost(
+      'http://88.212.222.164/city_server_vk_prod/check_and_perform?uid=' + FOwnerID +
+      '&crev=' + FRevision + '&fp=' + FVerFP + '&rn=' + IntToStr(Frn),
+      clHttpRequest2, Fres);
+    Result := Fres.Text;
+
+    AddLog('server exec check_and_perform. elm=' + IntToStr(Qu.Count) +
+      ' room=' + IntToStr(FCurrRoomID) +
+      '. rn=' + IntToStr(frn) +
+      '. res len=' + IntToStr(length(Result)));
+    AddLogFile('!server', 'check_and_perform.xml', Fres);
+  except
+  end;
+end;
+
+function TMPServer.SrvCheckReqResult(data: string): boolean;
+var
+ doc: IXMLDocument;
+ root,
+ nod: IXMLNode;
+ i: integer;
+begin
+  Result := false;
+  try
+    doc := LoadXMLData(data);
+    if doc = nil then exit;
+
+    root := doc.DocumentElement;
+    if root = nil then
+    begin
+      AddLog('server error: empty response');
+      exit;
+    end;
+
+    // logging messages
+    nod := root.ChildNodes.FindNode('messages');
+    if nod <> nil then
+      for i := 0 to nod.ChildNodes.Count - 1 do
+        AddLog('server message: ' +
+           nod.ChildNodes[i].NodeName + ' ' +
+          'fr:' + VarToStr(nod.ChildNodes[i].Attributes['friend_name']) +
+          'code:' + VarToStr(nod.ChildNodes[i].Attributes['code'])
+        , 5);
+
+    // is OK
+    if root.ChildNodes.FindNode('ok') <> nil then
+    begin
+      Result := true;
+      exit;
+    end;
+
+    //  error reporting
+    nod := root.ChildNodes.FindNode('errors');
+    if nod <> nil then
+    begin
+      if nod.ChildNodes.Count = 0 then
+        AddLog('server error: ' + nod.Text, 0)
+      else
+      begin
+        AddLog('server errors: ' + IntToStr(nod.ChildNodes.Count));
+        for i := 0 to nod.ChildNodes.Count - 1 do
+          AddLog(
+            VarToStr(nod.ChildNodes[i].Attributes['command'])+
+            ': ' + nod.ChildNodes[i].Text
+          , 0);
+      end;
+    end;
+
+    nod := root.ChildNodes.FindNode('error');
+    if nod <> nil then
+      AddLog('server error: ' + nod.Text, 0);
+  except
+  end;
+end;
+
 function TMPServer.SrvGetUserStat(RoomID: integer; data: string): String;
 begin
   clHttpRequest2.Assign(clHttpRequest);
@@ -424,6 +512,7 @@ begin
       data := SrvGetUserStatFirst(RoomID)
     else
       data := SrvGetUserStat(RoomID, '');
+    SrvCheckReqResult(data);
     if data = '' then exit;
 
     World.LoadFromXML(RoomID, data);
@@ -644,6 +733,7 @@ begin
 
     // process header
     LastHeader.ProcessResponseHeader(root);
+    if room.ID <> LastHeader.RoomID then exit;
     room.Header := LastHeader;
 
     // process data
@@ -718,6 +808,7 @@ begin
     SessionKey := VarToStr(root.Attributes['session_key']);
     Auto := VarToIntDef(root.Attributes['auto'], 0);
     Exp := VarToIntDef(root.Attributes['exp'], 0);
+    RoomID := VarToIntDef(root.Attributes['room_id'], -1);
     Level := VarToIntDef(root.Attributes['level'], 0);
     Visitors := VarToStr(root.Attributes['visitors']);
     RoomInformation := VarToStr(root.Attributes['room_information']);

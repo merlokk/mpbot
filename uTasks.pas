@@ -55,7 +55,7 @@ type
     procedure SetObjects(ATaskExec: TMTaskExecutor; AVK: TVKAPI; AMPServ: TMPServer; ADB: TMPdatabase; AQu: TActionQueue);
 
     procedure Clear; virtual;
-    procedure Execute;
+    procedure Execute(Force: boolean = false);
     procedure IntExecute; virtual;
     function canExecute: boolean;
 
@@ -267,7 +267,7 @@ begin
 
   if task <> nil then
   begin
-    task.Execute;
+    task.Execute(true);
     Result := true;
   end
   else
@@ -303,9 +303,9 @@ begin
   FQu := nil;
 end;
 
-procedure TMTask.Execute;
+procedure TMTask.Execute(Force: boolean = false);
 begin
-  if canExecute then
+  if Force or canExecute then
   try
     FExecCount := FExecCount + 1;
     PlanNextExecution;
@@ -629,6 +629,8 @@ procedure TMTaskInit.IntExecute;
 begin
   inherited;
 
+  TActionQueue.GetInstance.OwnerID := StrToIntDef(FVK.UserID, 0);
+
   AddLog('init vk api');
   FVK.TryAuthenticate;
   FVK.GetFriendFirstName(StrToIntDef(FVK.UserID, 0));
@@ -696,18 +698,22 @@ begin
       room := world.GetRoom(i);
       if (room = nil) or (not room.Avaliable) then continue;
 
-      AddLog('avail(' + IntToStr(i) + ')=' + BoolToStr(room.Avaliable, true) +
-        ' exp(' + IntToStr(i) + ')=' + IntToStr(room.Header.Exp) +
-        ' ppl(' + IntToStr(i) + ')=' + IntToStr(room.Header.GetPopulation) +
+      AddLog('ID=' + IntToStr(i) +
+        ' avail=' + BoolToStr(room.Avaliable, true) +
+        ' exp=' + IntToStr(room.Header.Exp) +
+        ' ppl=' + IntToStr(room.Header.GetPopulation) +
                   '(' + IntToStr(room.Header.GetFreePopulation) + ')' +
-        ' tax(' + IntToStr(i) + ')=' + IntToStr(room.Header.Tax) +
-        ' fields(' + IntToStr(i) + ')=' + IntToStr(room.FieldsCount)
+        ' tax=' + IntToStr(room.Header.Tax) +
+        ' fields=' + IntToStr(room.FieldsCount)
         );
       AddLog('fields(' + IntToStr(i) + ') ' + room.StrFieldsStat);
     end;
   end
   else
     AddLog('invalid room data');
+
+  if world.Valid then
+    FTaskExec.ExecuteTask(ttWhishListUpdate);
 
 {
   stat.FullUpdate;
@@ -784,9 +790,17 @@ begin
   if room = nil then exit;
 
   FQu.Clear;
-  room.FieldsExecute(true, false);
-  room.FieldsExecute(true, true);
-//  FMPServ.CheckAndPerform(FQu.GetStrData);
+  FQu.CurrentXP := world.LastHeader.Exp;
+  room.FieldsExecute(100, true, false);
+  if FQu.Count > 0 then
+    FMPServ.CheckAndPerform(world, FQu);
+
+  FQu.Clear;
+  FQu.CurrentXP := world.LastHeader.Exp;
+  room.FieldsExecute(30, false, true);
+  if FQu.Count > 0 then
+    FMPServ.CheckAndPerform(world, FQu);
+
   FQu.Clear;
 end;
 

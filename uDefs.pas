@@ -4,6 +4,10 @@ interface
 uses
   SysUtils, DateUtils, Variants, Classes;
 
+type
+  TFieldAction = (faNone, faClean, faPick, faPut, faTick,
+    faRemoveWishList, faAddWishList, faHelp);
+
 const
   STATE_BUILD = 1;
   STATE_STANDBY = 2;
@@ -22,6 +26,10 @@ const
   FN_HELP = 7;
   FN_STR: array [1..7] of string =
     ('clean', 'pick', 'put', 'tick',
+     'remove_from_wish_list', 'add_to_wish_list', 'help');
+
+  FA_STR: array [faNone..faHelp] of string =
+    ('', 'clean', 'pick', 'put', 'tick',
      'remove_from_wish_list', 'add_to_wish_list', 'help');
 
   GUARD_TIME = 60 / SecsPerDay; // 60 sec

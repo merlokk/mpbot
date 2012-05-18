@@ -171,14 +171,20 @@ end;
 
 procedure TMainFrm.Timer1Timer(Sender: TObject);
 begin
-  FViewCnt := FViewCnt + 1;
-  if FViewCnt > 5 then
-  begin
-    FViewCnt := 0;
+  Timer1.Enabled := false;
+  try
+    FViewCnt := FViewCnt + 1;
+    if FViewCnt > 5 then
+    begin
+      FViewCnt := 0;
 
-    GetSLLog(TStringList(lbLog.Items));
+      GetSLLog(TStringList(lbLog.Items));
+    end;
+
+    if cbAutorun.Checked then btRun.Click;
+  finally
+    Timer1.Enabled := true;
   end;
-
 end;
 
 end.

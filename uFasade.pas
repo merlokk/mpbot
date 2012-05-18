@@ -110,7 +110,12 @@ end;
 
 procedure TMPFasade.Run;
 begin
-  TaskExec.Execute;
+  FWorking := true;
+  try
+    TaskExec.Execute;
+  finally
+    FWorking := false;
+  end;
 end;
 
 { TFasadeParams }
