@@ -24,14 +24,15 @@ type
     FWantListLoaded: boolean;
     FRewardList: array of WantListRec;
     FRewardLoaded: boolean;
+
     FExecContractList: array of ExecContractRec;
-    FExecContractListLoaded: boolean;
+    FExecContractListLoaded: TDateTime;
 
     FGameFriend: array of integer;
     FFieldDenyLoaded: TDateTime;
     FFieldDeny: array of string;
 
-//    function FillExecContractList: boolean;
+    function UpdateExecContractList: boolean;
 //    function FillWantList: boolean;
 //    function FillRewardList: boolean;
     function UpdateFieldDenyList: boolean;
@@ -87,13 +88,13 @@ type
 //    function GetContractXP(contractclass: string): integer;
 
     function FieldIsDeny(Name: string): boolean;
-{    function isFieldDenyForWhishList(field: FieldRec): boolean;
+//    function isFieldDenyForWhishList(field: FieldRec): boolean;
 
-    function CanPut(item: GameItemRec): boolean;
-    function GetCPutKlass(item: GameItemRec): string;
-    function GetCAffectedItems(item: GameItemRec): string;
+//    function CanPut(item: GameItemRec): boolean;
+    function GetCPutKlass(FactoryName: string): string;
+//    function GetCAffectedItems(item: GameItemRec): string;
 
-    function GetTodayUsedGiftsCnt: integer;}
+//    function GetTodayUsedGiftsCnt: integer;
   end;
 
 implementation
@@ -258,7 +259,7 @@ begin
 
   FWantListLoaded := false;
   FRewardLoaded := false;
-  FExecContractListLoaded := false;
+  FExecContractListLoaded := 0;
   FFieldDenyLoaded := 0;
 
   FIBDatabase := TpFIBDatabase.Create(nil);
@@ -678,24 +679,23 @@ begin
     SetLength(Result, 0);
   end;
 end;
-
-function TMPdatabase.GetCPutKlass(item: GameItemRec): string;
+}
+function TMPdatabase.GetCPutKlass(FactoryName: string): string;
 var
  i: integer;
 begin
   Result := '';
   if not Connected then exit;
-  if not FExecContractListLoaded then
-    FillExecContractList;
+  UpdateExecContractList;
 
   for i := 0 to Length(FExecContractList) - 1 do
-    if pos(FExecContractList[i].name, item.ItemName) = 1 then
+    if pos(FExecContractList[i].name, FactoryName) = 1 then
     begin
       Result := FExecContractList[i].klass;
       exit;
     end;
 end;
-}
+
 function TMPdatabase.GetRewardPoints(userid: int64): Extended;
 begin
   Result := 0;
@@ -891,9 +891,18 @@ begin
   end;
 end;
 
-function TMPdatabase.FillExecContractList: boolean;
+}
+function TMPdatabase.UpdateExecContractList: boolean;
 begin
   Result := false;
+  // list up to date)))
+  if FExecContractListLoaded + 30 / MinsPerDay > Now then
+  begin
+    Result := true;
+    exit;
+  end;
+
+  // fill list
   try
     FIBQueryCurs.Close;
     FIBQueryCurs.SQL.Text := 'select * from EXEC_CONTRACTS';
@@ -915,11 +924,11 @@ begin
     end;
     FIBQueryCurs.Close;
 
-    FExecContractListLoaded := true;
+    FExecContractListLoaded := Now;
     Result := true;
   except
   end;
-end;                                  }
+end;
 
 function TMPdatabase.UpdateFieldDenyList: boolean;
 begin

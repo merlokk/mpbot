@@ -963,6 +963,14 @@ begin
       ContractOutputItem :=
         TItemsFactory.GetInstance.GetGameItem(inum);
     isDeny := TMPdatabase.GetInstance.FieldIsDeny(Name);
+
+    if Self is TMFieldFactory then
+      with TMFieldFactory(Self) do
+      begin
+        PutKlass := TMPdatabase.GetInstance.GetCPutKlass(Name);
+        PutGameItem := TItemsFactory.GetInstance.GetGameItem(PutKlass);
+      end;
+
     LastUpdate := Now;
 
     Result := true;

@@ -156,6 +156,11 @@ type
 
   TMFieldFactory = class (TMField)
   public
+    PutKlass: string;
+    PutGameItem: TMGameItem;
+
+    procedure Clear; override;
+
     procedure ChangeState(NewState: integer);
     procedure Execute(canTick, canWork: boolean); override;
   end;
@@ -1113,6 +1118,7 @@ begin
       elm := Qu.Add(Room.ID, ID, faPick,
         GameItem.GetAttr('extra_exp').AsInteger);
       aff := '';
+      // TODO: calc affected
       ippl := GameItem.GetAttr('population_increase').AsInteger;
       if aff <> '' then
       begin
@@ -1136,6 +1142,19 @@ procedure TMFieldFactory.ChangeState(NewState: integer);
 begin
   if State = NewState then exit;
 
+  if NewState = STATE_ABANDONED then
+  begin
+    State := STATE_ABANDONED;
+  end;
+
+  if NewState = STATE_WORK then
+  begin
+    if PutGameItem <> nil then
+      ContractOutput := IntToStr(PutGameItem.ID);
+
+    State := STATE_WORK;
+  end;
+
   if NewState = STATE_DIRTY then
   begin
     State := STATE_DIRTY;
@@ -1150,11 +1169,17 @@ begin
   end;
 end;
 
+procedure TMFieldFactory.Clear;
+begin
+  inherited;
+  PutKlass := '';
+  PutGameItem := nil;
+end;
+
 procedure TMFieldFactory.Execute(canTick, canWork: boolean);
 var
   elm: TActionQueueElm;
   xp: integer;
-  PutKlass: string;
 begin
   inherited;
 
@@ -1193,20 +1218,18 @@ begin
     end;
 
     if (State = STATE_STANDBY) and
-  //     (db.CanPut(item)) and
-       (GameItem.canPut)
+       (GameItem.canPut) and
+       (PutKlass <> '')
     then
     begin // moneyin-
-      PutKlass := '';
-{      Qu.Add(Room.ID, ID, faPut,
-        GameItem.GetAttr('extra_exp').AsInteger);
-    FClFields[length(FClFields) - 1].PutKlass :=
-      db.GetCPutKlass(st.fields[i].item);
-???
+      elm := Qu.Add(Room.ID, ID, faPut, 0);
+      elm.AddAttr('klass', PutKlass);
+
+{???
     FClFields[length(FClFields) - 1].Affected :=
       CalcFactoryAffecting(st, st.fields[i]);
-???
-      ChangeState(STATE_WORK);      }
+??? }
+      ChangeState(STATE_WORK);
     end;
 
     // Expired
@@ -1227,8 +1250,6 @@ begin
 
       ChangeState(STATE_STANDBY);
     end;
-
-
   except
   end;
 end;
