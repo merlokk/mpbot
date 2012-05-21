@@ -48,6 +48,8 @@ type
      function Add(ARoomID: integer; AID: int64; AType: TFieldAction; ADeltaXP: integer = 0): TActionQueueElm;
      function Count: integer;
      procedure FillFormData(vHttpRequest: TclHttpRequest);
+
+     function StrStat: string;
   end;
 
 implementation
@@ -149,6 +151,32 @@ begin
   if not Assigned(FInstance) then
     FInstance := TActionQueue.Create;
   Result := FInstance;
+end;
+
+function TActionQueue.StrStat: string;
+var
+  i: Integer;
+  a: TFieldAction;
+  cnt: array [faNone..faLast] of integer;
+begin
+  Result := '';
+
+  for a := faNone to faLast do
+    cnt[a] := 0;
+
+  for i := 0 to length(FQuElm) - 1 do
+    cnt[FQuElm[i].AType] := cnt[FQuElm[i].AType] + 1;
+
+  for a := faNone to faLast do
+    if cnt[a] <> 0 then
+      Result := Result +
+        FA_STR_STAT[a] + ':' + IntToStr(cnt[a]) + ', ';
+
+  if Result <> '' then
+  begin
+    Result := Copy(Result, 1, length(Result) - 2);
+    Result := '[' + Result + ']'
+  end;
 end;
 
 { TActionQueueElm }

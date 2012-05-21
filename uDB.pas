@@ -28,13 +28,13 @@ type
     FExecContractListLoaded: boolean;
 
     FGameFriend: array of integer;
-    FFieldDenyLoaded: boolean;
+    FFieldDenyLoaded: TDateTime;
     FFieldDeny: array of string;
 
 //    function FillExecContractList: boolean;
 //    function FillWantList: boolean;
 //    function FillRewardList: boolean;
-//    function FillFieldDenyList: boolean;
+    function UpdateFieldDenyList: boolean;
   public
     class function GetInstance: TMPdatabase; static;
 
@@ -83,11 +83,11 @@ type
     function ClearGameItemsDB: boolean;
     function AddGameItem(item: TMGameItem): boolean;
 
-{    function GetItemWorkXP(field: FieldRec): integer;
-    function GetContractXP(contractclass: string): integer;
+//    function GetItemWorkXP(field: FieldRec): integer;
+//    function GetContractXP(contractclass: string): integer;
 
-    function isFieldDeny(field: FieldRec): boolean;
-    function isFieldDenyForWhishList(field: FieldRec): boolean;
+    function FieldIsDeny(Name: string): boolean;
+{    function isFieldDenyForWhishList(field: FieldRec): boolean;
 
     function CanPut(item: GameItemRec): boolean;
     function GetCPutKlass(item: GameItemRec): string;
@@ -259,7 +259,7 @@ begin
   FWantListLoaded := false;
   FRewardLoaded := false;
   FExecContractListLoaded := false;
-  FFieldDenyLoaded := false;
+  FFieldDenyLoaded := 0;
 
   FIBDatabase := TpFIBDatabase.Create(nil);
 
@@ -782,25 +782,23 @@ begin
     Result := true;
   except
   end;
-end;
+end;                         }
 
-function TMPdatabase.isFieldDeny(field: FieldRec): boolean;
+function TMPdatabase.FieldIsDeny(Name: string): boolean;
 var
   i: integer;
 begin
   Result := false;
-
-  if not FFieldDenyLoaded then
-    FillFieldDenyList;
+  UpdateFieldDenyList;
 
   for i := 0 to length(FFieldDeny) - 1 do
-    if Pos(FFieldDeny[i], field.item.ItemName) = 1 then
+    if Pos(FFieldDeny[i], Name) = 1 then
     begin
       Result := true;
       break;
     end;
 end;
-
+     {
 function TMPdatabase.isFieldDenyForWhishList(field: FieldRec): boolean;
 begin
   Result := false;
@@ -921,11 +919,20 @@ begin
     Result := true;
   except
   end;
-end;
+end;                                  }
 
-function TMPdatabase.FillFieldDenyList: boolean;
+function TMPdatabase.UpdateFieldDenyList: boolean;
 begin
   Result := false;
+
+  // list up to date)))
+  if FFieldDenyLoaded + 30 / MinsPerDay > Now then
+  begin
+    Result := true;
+    exit;
+  end;
+
+  // fill list
   try
     FIBQuery.Close;
     FIBQuery.SQL.Text :=
@@ -936,22 +943,22 @@ begin
 
     while not FIBQuery.Eof do
     begin
-      if FIBQuery.FieldByName('field_name').AsString <> '' then
+      if FIBQuery.FieldByName('name').AsString <> '' then
       begin
         SetLength(FFieldDeny, length(FFieldDeny) + 1);
         FFieldDeny[length(FFieldDeny) - 1] :=
-          FIBQuery.FieldByName('field_name').AsString;
+          FIBQuery.FieldByName('name').AsString;
       end;
 
       FIBQuery.Next;
     end;
     FIBQuery.Close;
 
-    FFieldDenyLoaded := true;
+    FFieldDenyLoaded := Now;
     Result := true;
   except
   end;
-end;        }
+end;
 
 procedure TMPdatabase.FillGameFriends(lst: string);
 var

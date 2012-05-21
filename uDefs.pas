@@ -6,7 +6,7 @@ uses
 
 type
   TFieldAction = (faNone, faClean, faPick, faPut, faTick,
-    faRemoveWishList, faAddWishList, faHelp);
+    faRemoveWishList, faAddWishList, faHelp, faLast);
 
 const
   STATE_BUILD = 1;
@@ -28,9 +28,14 @@ const
     ('clean', 'pick', 'put', 'tick',
      'remove_from_wish_list', 'add_to_wish_list', 'help');
 
-  FA_STR: array [faNone..faHelp] of string =
+  FA_STR: array [faNone..faLast] of string =
     ('', 'clean', 'pick', 'put', 'tick',
-     'remove_from_wish_list', 'add_to_wish_list', 'help');
+     'remove_from_wish_list', 'add_to_wish_list', 'help',
+     '');
+  FA_STR_STAT: array [faNone..faLast] of string =
+    ('', 'cln', 'pick', 'put', 'tick',
+     'remwl', 'addwl', 'hlp',
+     '');
 
   GUARD_TIME = 60 / SecsPerDay; // 60 sec
 

@@ -106,6 +106,7 @@ type
   private
     FRoom: TMRoom;
     FGameItem: TMGameItem;
+    FContractOutputItem: TMGameItem;
     FSerial: cardinal;
     function GetFieldType: TMGameItemType;
     procedure SetRoom(const Value: TMRoom);
@@ -140,6 +141,7 @@ type
 
     property Serial: cardinal read FSerial write FSerial;
     property GameItem: TMGameItem read FGameItem write FGameItem;
+    property ContractOutputItem: TMGameItem read FContractOutputItem write FContractOutputItem;
 
     procedure ClearTick;
     procedure Execute(canTick, canWork: boolean); virtual;
@@ -832,7 +834,7 @@ begin
   Qu := TActionQueue.GetInstance;
   for i := 0 to length(FItems) - 1 do
   begin
-    if (MaxCount <> 0) and (MaxCount < Qu.Count)
+    if (MaxCount <> 0) and (MaxCount <= Qu.Count)
     then break;
 
     FItems[i].Execute(canTick, canWork);
@@ -928,6 +930,7 @@ end;
 procedure TMField.Clear;
 begin
   FGameItem := nil;
+  FContractOutputItem := nil;
   FSerial := 0;
 
   isDeny := false;
@@ -1133,11 +1136,25 @@ procedure TMFieldFactory.ChangeState(NewState: integer);
 begin
   if State = NewState then exit;
 
+  if NewState = STATE_DIRTY then
+  begin
+    State := STATE_DIRTY;
+  end;
+
+  if NewState = STATE_STANDBY then
+  begin
+    ContractOutput := '';
+    OutputFill := '';
+
+    State := STATE_STANDBY;
+  end;
 end;
 
 procedure TMFieldFactory.Execute(canTick, canWork: boolean);
 var
   elm: TActionQueueElm;
+  xp: integer;
+  PutKlass: string;
 begin
   inherited;
 
@@ -1165,18 +1182,22 @@ begin
         (OutputFill <> '')) and
        (GameItem.canPick)
     then
-    begin
-{      Qu.Add(Room.ID, ID, faPick,
-        GameItem.GetAttr('extra_exp').AsInteger);
+    begin   // moneyout+ xp+
+      xp := 2;
+      if FContractOutputItem <> nil then
+        xp := FContractOutputItem.GetAttr('exp').AsInteger;
 
-      ChangeState(STATE_STANDBY);      }
+      Qu.Add(Room.ID, ID, faPick, xp);
+
+      ChangeState(STATE_STANDBY);
     end;
 
     if (State = STATE_STANDBY) and
   //     (db.CanPut(item)) and
        (GameItem.canPut)
     then
-    begin
+    begin // moneyin-
+      PutKlass := '';
 {      Qu.Add(Room.ID, ID, faPut,
         GameItem.GetAttr('extra_exp').AsInteger);
     FClFields[length(FClFields) - 1].PutKlass :=
@@ -1192,11 +1213,19 @@ begin
     if (State = STATE_EXPIRED) and
        (GameItem.canPick)
     then
-    begin
-{      Qu.Add(Room.ID, ID, faPick,
-        GameItem.GetAttr('extra_exp').AsInteger);
+    begin // moneyin/2 +
+      Qu.Add(Room.ID, ID, faPick, 0);
 
-      ChangeState(STATE_STANDBY);      }
+      ChangeState(STATE_DIRTY);
+    end;
+
+    if (State = STATE_DIRTY) and
+       (GameItem.canClean)
+    then
+    begin // money- xp+
+      Qu.Add(Room.ID, ID, faClean, 2);
+
+      ChangeState(STATE_STANDBY);
     end;
 
 

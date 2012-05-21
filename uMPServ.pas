@@ -129,6 +129,7 @@ function TMPServer.CheckAndPerform(World: TMWorld; Qu: TActionQueue): boolean;
 var
   data: string;
 begin
+
   Result := false;
   try
     if FSessionKey = '' then exit;
@@ -142,7 +143,7 @@ begin
 
     Result := true;
     AddLog('server_time=' + IntToStr(World.LastHeader.ServerTime) +
-      ' next_tick=' + IntToStr(World.LastHeader.NextTick) +
+      ' q: ' + Qu.StrStat +
       ' session_key=' + World.LastHeader.SessionKey, 4);
   except
   end;
@@ -934,6 +935,8 @@ end;
 { TMFieldHelper }
 
 function TMFieldHelper.Load(node: IXMLNode): boolean;
+var
+  inum: integer;
 begin
   Result := false;
   try
@@ -954,6 +957,12 @@ begin
     ExtraValue := VarToIntDef(node.Attributes['extra_value'], 0);
 
     GameItem := TItemsFactory.GetInstance.GetGameItem(Name);
+
+    inum := StrToIntDef(ContractOutput, 0);
+    if inum > 0 then
+      ContractOutputItem :=
+        TItemsFactory.GetInstance.GetGameItem(inum);
+    isDeny := TMPdatabase.GetInstance.FieldIsDeny(Name);
     LastUpdate := Now;
 
     Result := true;
