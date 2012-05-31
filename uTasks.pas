@@ -3,7 +3,7 @@ unit uTasks;
 interface
 uses
   SysUtils, Variants, Types, Classes, IOUtils, Forms, XMLIntf, XMLDoc, StrUtils,
-  Windows,
+  Windows, DateUtils,
   uMPserv, uVK, uDB, uGameItems, uLogger, uQueue;
 
 type
@@ -713,7 +713,12 @@ begin
     AddLog('invalid room data');
 
   if world.Valid then
+  begin
     FTaskExec.ExecuteTask(ttWhishListUpdate);
+
+    if length(world.AvailGift) > 0 then
+      FTaskExec.ExecuteTask(ttGiftSend);
+  end;
 
 {
   stat.FullUpdate;
@@ -780,6 +785,7 @@ procedure TMTaskCurRoomWork.IntExecute;
 var
   world: TMWorld;
   room: TMRoom;
+  cnt: integer;
 begin
   inherited;
 
@@ -789,19 +795,41 @@ begin
   room := world.GetRoom(FMPServ.CurrRoomID);
   if room = nil then exit;
 
-  FQu.Clear;
-  FQu.CurrentXP := world.LastHeader.Exp;
-  room.FieldsExecute(100, true, false);
-  if FQu.Count > 0 then
-    FMPServ.CheckAndPerform(world, FQu);
+  //  ticks more then 30  or
+  //  we have "old" ticks - older then 60 seconds   or
+  //  we have no more ticks in 20 seconds
+  if (room.FieldsExecuteCount(true, false, 0, Now - 5 * OneSecond) > 30) or
+     (room.FieldsExecuteCount(true, false, Now - 60 * OneSecond, Now - 5 * OneSecond) > 0) or
+     (room.FieldsExecuteCount(true, false, Now - 5 * OneSecond, Now + 20 * OneSecond) <= 0)
+  then
+  begin
+    FQu.Clear;
+    FQu.CurrentXP := world.LastHeader.Exp;
+    room.FieldsExecute(80 + random(35), true, false);
+    if FQu.Count > 0 then
+    begin
+      FMPServ.CheckAndPerform(world, FQu);
 
-  FQu.Clear;
-  FQu.CurrentXP := world.LastHeader.Exp;
-  room.FieldsExecute(30, false, true);
-  if FQu.Count > 0 then
-    FMPServ.CheckAndPerform(world, FQu);
+      // if we put ticks to server - end of the task!!!
+      exit;
+    end;
+  end;
 
-  FQu.Clear;
+  // work items more then 30  or
+  // work items more then tick items in 60 seconds * 3
+  cnt := room.FieldsExecuteCount(false, true, 0, Now - 10 * OneSecond);
+  if (cnt > 30) or
+     (cnt > 3 * room.FieldsExecuteCount(true, false, 0, Now + 60 * OneSecond))
+  then
+  begin
+    FQu.Clear;
+    FQu.CurrentXP := world.LastHeader.Exp;
+    room.FieldsExecute(15 + random(20), false, true);
+    if FQu.Count > 0 then
+      FMPServ.CheckAndPerform(world, FQu);
+
+    FQu.Clear;
+  end;
 end;
 
 { TMTaskWorkDispatcher }
@@ -827,11 +855,13 @@ begin
   if room <> nil then
   begin
     FTaskExec.ExecuteTask(ttCurRoomWork);
+
+    if room.FieldsExecuteCount(true, true, 0, Now + 10 * OneMinute) = 0 then
+    begin
+      FTaskExec.ExecuteTask(ttFriendHelp);
+      exit;
+    end;
   end;
-
-  if length(world.AvailGift) > 0 then
-    FTaskExec.ExecuteTask(ttGiftSend);
-
 end;
 
 { TMTaskWhishListUpdate }

@@ -138,6 +138,7 @@ type
     procedure Clear; virtual;
 
     function GetProcessEndDT: TDateTime;
+    function GetActionDT(canTick, canWork: boolean): TDateTime; virtual;
 
     property Serial: cardinal read FSerial write FSerial;
     property GameItem: TMGameItem read FGameItem write FGameItem;
@@ -161,18 +162,21 @@ type
 
     procedure Clear; override;
 
+    function GetActionDT(canTick, canWork: boolean): TDateTime; override;
     procedure ChangeState(NewState: integer);
     procedure Execute(canTick, canWork: boolean); override;
   end;
 
   TMFieldBuilding = class (TMField)
   public
+    function GetActionDT(canTick, canWork: boolean): TDateTime; override;
     procedure ChangeState(NewState: integer);
     procedure Execute(canTick, canWork: boolean); override;
   end;
 
   TMFieldHouse = class (TMField)
   public
+    function GetActionDT(canTick, canWork: boolean): TDateTime; override;
     procedure ChangeState(NewState: integer);
     procedure Execute(canTick, canWork: boolean); override;
   end;
@@ -243,6 +247,7 @@ type
 
     procedure FieldsClearTick;
     procedure FieldsExecute(MaxCount: integer; canTick, canWork: boolean); virtual;
+    function FieldsExecuteCount(canTick, canWork: boolean; FromDate, ToDate: TDateTime): integer;
 
     property ID: integer read FID write FID;
     property FieldsCount: integer read GetFieldsCount;
@@ -846,6 +851,26 @@ begin
   end;
 end;
 
+function TMRoom.FieldsExecuteCount(canTick, canWork: boolean; FromDate,
+  ToDate: TDateTime): integer;
+var
+  i: Integer;
+  dt: TDateTime;
+begin
+  Result := 0;
+  for i := 0 to length(FItems) - 1 do
+  begin
+    dt := FItems[i].GetActionDT(canTick, canWork);
+    // No action needed
+    if dt < Now - 10 then continue;
+    // action in open intervals. each of dates may eq 0.
+    if (dt > FromDate) and
+       ((ToDate < Now - 10) or (dt < ToDate))
+    then
+      Result := Result + 1;
+  end;
+end;
+
 function TMRoom.StrFieldsStat: string;
 begin
   Result := 'BUILD/STANDBY/WORK/ABAND/DIRTY/EXPIR ' +
@@ -982,6 +1007,14 @@ begin
 
 end;
 
+function TMField.GetActionDT(canTick, canWork: boolean): TDateTime;
+begin
+  Result := 0;
+  // 0: no action
+  // now-1: work action
+  // else: tick action
+end;
+
 function TMField.GetFieldType: TMGameItemType;
 begin
   if GameItem = nil then
@@ -1063,6 +1096,21 @@ begin
   end;
 end;
 
+function TMFieldBuilding.GetActionDT(canTick, canWork: boolean): TDateTime;
+begin
+  inherited;
+
+  if canTick and
+     (State = STATE_ABANDONED)
+  then
+    Result := GetProcessEndDT;
+
+  if canWork and
+     (State = STATE_DIRTY)
+  then
+    Result := Now - 1;
+end;
+
 { TMFieldHouse }
 
 procedure TMFieldHouse.ChangeState(NewState: integer);
@@ -1134,6 +1182,21 @@ begin
     end;
   except
   end;
+end;
+
+function TMFieldHouse.GetActionDT(canTick, canWork: boolean): TDateTime;
+begin
+  inherited;
+
+  if canTick and
+     (State = STATE_WORK)
+  then
+    Result := GetProcessEndDT;
+
+  if canWork and
+     (State = STATE_STANDBY)
+  then
+    Result := Now - 1;
 end;
 
 { TMFieldFactory }
@@ -1252,6 +1315,29 @@ begin
     end;
   except
   end;
+end;
+
+function TMFieldFactory.GetActionDT(canTick, canWork: boolean): TDateTime;
+begin
+  inherited;
+
+  if canTick and
+     (State = STATE_WORK)
+  then
+    Result := GetProcessEndDT;
+
+  if canWork and
+     (State = STATE_ABANDONED) and
+     ((ContractOutput <> '') or
+      (OutputFill <> '')
+     ) or
+     ((State = STATE_STANDBY) and
+       (PutKlass <> '')
+     ) or
+     (State = STATE_DIRTY) or
+     (State = STATE_EXPIRED)
+  then
+    Result := Now - 1;
 end;
 
 end.
