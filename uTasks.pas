@@ -4,7 +4,8 @@ interface
 uses
   SysUtils, Variants, Types, Classes, IOUtils, Forms, XMLIntf, XMLDoc, StrUtils,
   Windows, DateUtils,
-  uMPserv, uVK, uDB, uGameItems, uLogger, uQueue;
+  uMPserv, uVK, uDB, uGameItems, uLogger, uQueue, uFactories,
+  uCalc, uDefs;
 
 type
   TMTaskType = (ttBaseClass, ttInitDB, ttLoadSWF,
@@ -94,6 +95,24 @@ type
   end;
 
   TMTaskWhishListUpdate = class (TMTask)
+  private
+//    FWlFields: array of WishDBRec;
+    FCurrentWl,
+    FNeededWl: TIntegerDynArray;
+
+    function GetListCount(vList: string; vID: integer): integer;
+
+    function isNeededWlFull: boolean;
+    procedure AddNeededWl(GameItemID: integer);
+    procedure AddNeededWlByBuilding(world: TMWorld; field: TMField);
+    function inList(lst: TIntegerDynArray; val: integer): boolean;
+
+    procedure FillCurrentWl(data: string);
+    procedure FillListFromPriorityBld(world: TMWorld);
+    procedure FillListFromWorld(world: TMWorld);
+
+    function GetWlStr: string;
+  public
     constructor Create; override;
     procedure IntExecute; override;
   end;
@@ -688,7 +707,11 @@ begin
       ' owner(' + IntToStr(room0.Header.Level) + '):' + IntToStr(room0.Header.OwnerID) +
       ' room cnt=' + IntToStr(world.GetRoomCount) +
       ' friends=' + IntToStr(length(world.Friends)) +
-      ' barn=' + IntToStr(length(world.Barn)) );
+      ' barn=' + IntToStr(length(world.Barn)) +
+      ' money=' + IntToStr(world.LastHeader.Gold) + '/' +
+         IntToStr(world.LastHeader.Coins) +
+      ' xp='  + IntToStr(world.LastHeader.Exp)
+      );
 
     if length(world.AvailGift) > 0 then
       AddLog('gifts ' + world.StrGiftStat);
@@ -797,10 +820,10 @@ begin
 
   //  ticks more then 30  or
   //  we have "old" ticks - older then 60 seconds   or
-  //  we have no more ticks in 20 seconds
+  //  we have no more ticks in 22 seconds
   if (room.FieldsExecuteCount(true, false, 0, Now - 5 * OneSecond) > 30) or
      (room.FieldsExecuteCount(true, false, Now - 60 * OneSecond, Now - 5 * OneSecond) > 0) or
-     (room.FieldsExecuteCount(true, false, Now - 5 * OneSecond, Now + 20 * OneSecond) <= 0)
+     (room.FieldsExecuteCount(true, false, Now - 5 * OneSecond, Now + 22 * OneSecond) <= 0)
   then
   begin
     FQu.Clear;
@@ -818,8 +841,9 @@ begin
   // work items more then 30  or
   // work items more then tick items in 60 seconds * 3
   cnt := room.FieldsExecuteCount(false, true, 0, Now - 10 * OneSecond);
-  if (cnt > 30) or
-     (cnt > 3 * room.FieldsExecuteCount(true, false, 0, Now + 60 * OneSecond))
+  if ((cnt > 30) or
+      (cnt > 3 * room.FieldsExecuteCount(true, false, 0, Now + 60 * OneSecond))
+     )
   then
   begin
     FQu.Clear;
@@ -866,16 +890,258 @@ end;
 
 { TMTaskWhishListUpdate }
 
+procedure TMTaskWhishListUpdate.AddNeededWl(GameItemID: integer);
+var
+ i: integer;
+begin
+  if isNeededWlFull or (GameItemID <= 0) then exit;
+
+  for i := 0 to length(FNeededWl) - 1 do
+    if FNeededWl[i] = GameItemID then exit;
+
+  SetLength(FNeededWl, length(FNeededWl) + 1);
+  FNeededWl[length(FNeededWl) - 1] := GameItemID;
+end;
+
+procedure TMTaskWhishListUpdate.AddNeededWlByBuilding(world: TMWorld; field: TMField);
+var
+  i,
+  cnt: integer;
+  sl: TStringList;
+  gi: TMGameItem;
+begin
+  sl := TStringList.Create;
+  sl.NameValueSeparator := ':';
+  sl.Delimiter := ',';
+  sl.DelimitedText := field.GameItem.MaterialQty;
+
+  for i := 0 to sl.Count - 1 do
+  begin
+    gi := TItemsFactory.GetInstance.GetGameItem(sl.Names[i]);
+    if (gi = nil) or
+       (gi.ID <= 0) or
+       (gi.ShopDept <> 'materials')
+    then continue;
+
+    cnt := StrToIntDef(sl.ValueFromIndex[i], 1) -
+           GetListCount(field.InputFill, gi.ID) -
+           world.GetAvailGiftCount(gi.ID);
+
+    if cnt > 0 then AddNeededWl(gi.ID);
+  end;
+
+  sl.Free;
+end;
+
 constructor TMTaskWhishListUpdate.Create;
 begin
   inherited;
   SetTaskType(ttWhishListUpdate);
+
+  SetLength(FCurrentWl, 0);
+  SetLength(FNeededWl, 0);
+end;
+
+procedure TMTaskWhishListUpdate.FillCurrentWl(data: string);
+var
+ sl: TStringList;
+ i: integer;
+begin
+  SetLength(FCurrentWl, 0);
+
+  sl := TStringList.Create;
+  sl.Delimiter := ',';
+  sl.DelimitedText := data;
+
+  for i := 0 to sl.Count - 1 do
+  begin
+    SetLength(FCurrentWl, length(FCurrentWl) + 1);
+    FCurrentWl[length(FCurrentWl) - 1] := StrToIntDef(sl[i], 0);
+  end;
+
+  sl.Free;
+end;
+
+procedure TMTaskWhishListUpdate.FillListFromPriorityBld(world: TMWorld);
+var
+  i,
+  j,
+  r: Integer;
+  room: TMRoom;
+  field: TMField;
+
+  FPriorityBldList: TStringDynArray;
+begin
+  FPriorityBldList := FDB.GetPriorityBuildList;
+
+  for i := 0 to length(FPriorityBldList) - 1 do
+    for r := 0 to world.GetRoomCount - 1 do
+    begin
+      room := world.GetRoom(r);
+      if room = nil then continue;
+
+      for j := 0 to room.FieldsCount - 1 do
+      begin
+        field := room.GetFieldI(j);
+        if field = nil then continue;
+
+        if Pos(FPriorityBldList[i], field.Name) = 1 then
+        begin
+          AddNeededWlByBuilding(world, field);
+
+          if isNeededWlFull then exit
+        end;
+      end;
+    end;
+end;
+
+procedure TMTaskWhishListUpdate.FillListFromWorld(world: TMWorld);
+var
+  i,
+  r: Integer;
+  room: TMRoom;
+  field: TMField;
+  wl: TWishListCalc;
+begin
+  wl := TWishListCalc.Create;
+
+  // get all fields materials info
+  for r := 0 to world.GetRoomCount - 1 do
+  begin
+    room := world.GetRoom(r);
+    if room = nil then continue;
+
+    for i := 0 to room.FieldsCount - 1 do
+    begin
+      field := room.GetFieldI(i);
+      if (field = nil) or (field.GameItem = nil) then continue;
+      if (field.GameItem.isBuildSite) and
+         (field.GameItem.MaterialQty <> '') and
+         //  bugs from database
+{         ((field.GameItem.GetAttr('produce').AsString <> '') or
+          (field.InputFill <> ''))} true
+      then
+      begin
+        wl.AddNeedList(field.GameItem.MaterialQty);
+        wl.AddCurrList(field.InputFill);
+      end;
+    end;
+  end;
+
+  wl.FillGiftsCount(world);
+  wl.SortByBalance;
+
+  //  fill wishlist
+  if not isNeededWlFull then
+  begin
+    for i := 0 to wl.Count - 1 do
+    begin
+      if wl.WList[i].GetBalance > 0 then
+        AddNeededWl(wl.WList[i].ID);
+      if isNeededWlFull then break;
+    end;
+  end;
+
+  wl.Free;
+end;
+
+function TMTaskWhishListUpdate.GetListCount(vList: string; vID: integer): integer;
+var
+  sl: TStringList;
+begin
+  sl := TStringList.Create;
+  sl.NameValueSeparator := ':';
+  sl.Delimiter := ',';
+  sl.DelimitedText := vList;
+
+  Result := StrToIntDef(sl.Values[IntToStr(vID)], 0);
+
+  sl.Free;
+end;
+
+function TMTaskWhishListUpdate.GetWlStr: string;
+var
+ i: integer;
+ gi: TMGameItem;
+begin
+  Result := '';
+  for i := 0 to length(FNeededWl) - 1 do
+  begin
+    gi := TItemsFactory.GetInstance.GetGameItem(FNeededWl[i]);
+    if gi <> nil then
+      Result := Result + gi.RusName + ', '
+    else
+      Result := Result + 'nil, '
+  end;
+  Result := Copy(Result, 1, length(Result) - 2);
+end;
+
+function TMTaskWhishListUpdate.inList(lst: TIntegerDynArray;
+  val: integer): boolean;
+var
+ i: integer;
+begin
+  Result := false;
+  for i := 0 to length(lst) - 1 do
+    if lst[i] = val then
+    begin
+      Result := true;
+      break;
+    end;
 end;
 
 procedure TMTaskWhishListUpdate.IntExecute;
+var
+  world: TMWorld;
+  i: integer;
 begin
   inherited;
 
+  world := TMWorld.GetInstance;
+  if (world = nil) or (not world.Valid) then exit;
+
+  // clear needed wish list
+  SetLength(FNeededWl, 0);
+  // fill current wish list
+  FillCurrentWl(world.LastHeader.WishListStr);
+
+  // fill list by needed gifts
+{  if (NeedGifts <> '') and
+     (NeedGiftsCount > 0) and
+     (st.GetGiftCntByClassId(db.GeItemClassId(NeedGifts)) < NeedGiftsCount)
+  then
+    AddNeededWl(db.GeItemClassId(NeedGifts));
+}
+
+  // fill wish list by priority
+  FillListFromPriorityBld(world);
+  //  need gifts and used(current) gifts
+  FillListFromWorld(world);
+
+  // logging
+  AddLog('calc wl: ' + GetWlStr, 5);
+
+  // calc commands
+  FQu.Clear;
+  //  FMPServ.CurrRoomID ---- небольшое отклонение от нормального клиента
+  for i := 0 to length(FCurrentWl) - 1 do
+    if not inList(FNeededWl, FCurrentWl[i]) then
+      FQu.Add(FMPServ.CurrRoomID, FCurrentWl[i], faRemoveWishList);
+
+  for i := 0 to length(FNeededWl) - 1 do
+    if not inList(FCurrentWl, FNeededWl[i]) then
+      FQu.Add(FMPServ.CurrRoomID, FNeededWl[i], faAddWishList);
+
+  if FQu.Count > 0 then
+  begin
+//    FMPServ.CheckAndPerform(world, FQu);
+    FQu.Clear;
+  end;
+end;
+
+function TMTaskWhishListUpdate.isNeededWlFull: boolean;
+begin
+  Result := length(FNeededWl) >= 10;
 end;
 
 { TMTaskGiftSend }

@@ -68,9 +68,10 @@ type
 {
     function GetGiftScore(gift_id: cardinal): extended;
     function QueryWantList: boolean;
+}
     function GetPriorityBuildList: TStringDynArray;
 
-    function MakeGifts: TpFIBQuery;
+{    function MakeGifts: TpFIBQuery;
     function GetFriendsList: TpFIBQuery;
 
     function CalcRewardPoints(OwnerUserID: int64): boolean;
@@ -653,23 +654,23 @@ begin
   FIBQuery.ExecQuery;
   Result := FIBQuery.ParamValue('name');
 end;
-     {
+
 function TMPdatabase.GetPriorityBuildList: TStringDynArray;
 begin
   SetLength(Result, 0);
   try
     FIBQuery.Close;
     FIBQuery.SQL.Text :=
-      'select * from PRIORITY_BUID order by PRIORITY desc';
+      'select * from PRIORITY_BUILD order by PRIORITY desc';
     FIBQuery.ExecQuery;
 
     while not FIBQuery.Eof do
     begin
-      if FIBQuery.FieldByName('name').AsString <> '' then
+      if FIBQuery.FieldByName('NAME').AsString <> '' then
       begin
         SetLength(Result, length(Result) + 1);
         Result[length(Result) - 1] :=
-          FIBQuery.FieldByName('name').AsString;
+          FIBQuery.FieldByName('NAME').AsString;
       end;
 
       FIBQuery.Next;
@@ -679,7 +680,7 @@ begin
     SetLength(Result, 0);
   end;
 end;
-}
+
 function TMPdatabase.GetCPutKlass(FactoryName: string): string;
 var
  i: integer;

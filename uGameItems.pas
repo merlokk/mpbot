@@ -61,6 +61,7 @@ type
     function GetcanPick: boolean;
     function GetcanPut: boolean;
     function GetisBuildSite: boolean;
+    function GetMaterialQty: string;
   public
     constructor Create;
     procedure Clear;
@@ -85,6 +86,7 @@ type
     property isFactory: boolean read GetIsFactory;
     property isBuilding: boolean read GetIsBuilding;
     property isHouse: boolean read GetIsHouse;
+    property MaterialQty: string read GetMaterialQty;
   end;
 
   TGiftRec = packed record
@@ -240,6 +242,7 @@ type
 
     function StartFieldsUpdate: cardinal;
     function GetField(AID: int64): TMField;
+    function GetFieldI(indx: integer): TMField;
     procedure AddField(field: TMField);
     procedure EndFieldsUpdate(serial: cardinal);
     function GetFieldsCountByType(state: integer): integer;
@@ -289,7 +292,11 @@ type
     function AddRoom(RoomID: integer): TMRoom;
     function GetRoomCount: integer;
 
+    function GetAvailGiftCount(GameItemID: cardinal): integer;
+    function GetBarnCount(GameItemID: cardinal): integer;
+
     function StrGiftStat: String;
+    function StrXPStat: string;
 
     property SWFRevision: string read FSWFRevision write FSWFRevision;
     property SWFRevisionAppID: string read GetSWFRevisionAppID;
@@ -444,6 +451,11 @@ begin
       Result := gitHouse;
       exit;
     end;
+end;
+
+function TMGameItem.GetMaterialQty: string;
+begin
+  Result := GetAttr('materials_quantity_obj').AsString;
 end;
 
 function TMGameItem.GetAttrIndx(id: integer): integer;
@@ -667,6 +679,30 @@ begin
   inherited;
 end;
 
+function TMWorld.GetAvailGiftCount(GameItemID: cardinal): integer;
+var
+ i: integer;
+begin
+  Result := 0;
+  if not valid then exit;
+
+  for i := 0 to length(RecvdGift) - 1 do
+    if (RecvdGift[i].GetGameItemID = GameItemID) then
+      Result := Result + RecvdGift[i].Qty;
+end;
+
+function TMWorld.GetBarnCount(GameItemID: cardinal): integer;
+var
+ i: integer;
+begin
+  Result := 0;
+  if not valid then exit;
+
+  for i := 0 to length(barn) - 1 do
+    if (Barn[i].id = GameItemID) then
+      Result := Result + Barn[i].Qty;
+end;
+
 class function TMWorld.GetInstance: TMWorld;
 begin
   if CInstance = nil then CInstance := TMWorld.Create;
@@ -722,6 +758,17 @@ begin
       ' received=' + IntToStr(received)
   else
     Result := 'invalid data';
+end;
+
+function TMWorld.StrXPStat: string;
+var
+  i: Integer;
+begin
+  Result := '';
+  for i := 0 to length(FRooms) - 1 do
+    Result := Result + IntToStr(FRooms[i].Header.Exp) + ', ';
+
+  Result := Copy(Result, 1, length(Result) - 2);
 end;
 
 { TWorldHeader }
@@ -893,6 +940,14 @@ begin
       Result := FItems[i];
       break;
     end;
+end;
+
+function TMRoom.GetFieldI(indx: integer): TMField;
+begin
+  Result := nil;
+  if (indx < 0) or (indx >= length(FItems)) then exit;
+
+  Result := FItems[indx];
 end;
 
 function TMRoom.GetFieldsCountByType(state: integer): integer;
@@ -1098,7 +1153,7 @@ end;
 
 function TMFieldBuilding.GetActionDT(canTick, canWork: boolean): TDateTime;
 begin
-  inherited;
+  Result := inherited;
 
   if canTick and
      (State = STATE_ABANDONED)
@@ -1186,7 +1241,7 @@ end;
 
 function TMFieldHouse.GetActionDT(canTick, canWork: boolean): TDateTime;
 begin
-  inherited;
+  Result := inherited;
 
   if canTick and
      (State = STATE_WORK)
@@ -1319,7 +1374,7 @@ end;
 
 function TMFieldFactory.GetActionDT(canTick, canWork: boolean): TDateTime;
 begin
-  inherited;
+  Result := inherited;
 
   if canTick and
      (State = STATE_WORK)

@@ -1,26 +1,28 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <BorlandProject>
 	<Transactions>
-    <Transaction>1899.12.30 00:00:00.000.573,=C:\Projects\!chrome\MPolis2\JSON\superobject.pas</Transaction>
-    <Transaction>1899.12.30 00:00:00.000.852,C:\Projects\!chrome\MPolis2\uDefs.pas=C:\Projects\!chrome\MPolis2\Unit1.pas</Transaction>
-    <Transaction>1899.12.30 00:00:00.000.777,=C:\Projects\!chrome\MPolis2\Unit1.pas</Transaction>
-    <Transaction>1899.12.30 00:00:00.000.320,=C:\Projects\!chrome\MPolis2\Unit1.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.609,=C:\Projects\!chrome\MPolis2\Unit1.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.370,=C:\Projects\!chrome\MPolis2\Unit1.pas</Transaction>
     <Transaction>1899.12.30 00:00:00.000.558,=C:\Projects\!chrome\MPolis2\Unit1.pas</Transaction>
-    <Transaction>1899.12.30 00:00:00.000.500,=C:\Projects\!chrome\MPolis2\uDB.pas</Transaction>
-    <Transaction>1899.12.30 00:00:00.000.054,C:\Projects\!chrome\MPolis2\MPolis2.dproj=C:\Users\oleg\Documents\RAD Studio\Projects\Project1.dproj</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.244,C:\Projects\!chrome\MPolis2\Unit1.pas=C:\Projects\!chrome\MPolis2\uQueue.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.777,=C:\Projects\!chrome\MPolis2\Unit1.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.852,C:\Projects\!chrome\MPolis2\uDefs.pas=C:\Projects\!chrome\MPolis2\Unit1.pas</Transaction>
     <Transaction>1899.12.30 00:00:00.000.954,C:\Projects\!chrome\MPolis2\uMain.pas=C:\Users\oleg\Documents\RAD Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.054,C:\Projects\!chrome\MPolis2\MPolis2.dproj=C:\Users\oleg\Documents\RAD Studio\Projects\Project1.dproj</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.500,=C:\Projects\!chrome\MPolis2\uDB.pas</Transaction>
     <Transaction>1899.12.30 00:00:00.000.406,=C:\Projects\!chrome\MPolis2\uVK.pas</Transaction>
     <Transaction>1899.12.30 00:00:00.000.680,=C:\Users\oleg\Documents\RAD Studio\Projects\Unit1.pas</Transaction>
-    <Transaction>1899.12.30 00:00:00.000.079,=C:\Projects\!chrome\MPolis2\Unit1.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.868,C:\Projects\!chrome\MPolis2\Unit1.pas=C:\Projects\!chrome\MPolis2\uCalc.pas</Transaction>
     <Transaction>1899.12.30 00:00:00.000.954,C:\Projects\!chrome\MPolis2\uMain.dfm=C:\Users\oleg\Documents\RAD Studio\Projects\Unit1.dfm</Transaction>
     <Transaction>1899.12.30 00:00:00.000.052,=C:\Projects\!chrome\MPolis2\uMPServ.pas</Transaction>
     <Transaction>1899.12.30 00:00:00.000.025,C:\Projects\!chrome\MPolis2\uFasade.pas=C:\Projects\!chrome\MPolis2\Unit1.pas</Transaction>
     <Transaction>1899.12.30 00:00:00.000.108,=C:\Projects\!chrome\MPolis2\uLogger.pas</Transaction>
     <Transaction>1899.12.30 00:00:00.000.094,C:\Projects\!chrome\MPolis2\uFactories.pas=C:\Projects\!chrome\MPolis2\Unit1.pas</Transaction>
-    <Transaction>1899.12.30 00:00:00.000.221,=C:\Projects\!chrome\MPolis2\Unit1.pas</Transaction>
-    <Transaction>1899.12.30 00:00:00.000.370,=C:\Projects\!chrome\MPolis2\Unit1.pas</Transaction>
-    <Transaction>1899.12.30 00:00:00.000.507,C:\Projects\!chrome\MPolis2\Unit1.pas=C:\Projects\!chrome\MPolis2\uGameItems.pas</Transaction>
-    <Transaction>1899.12.30 00:00:00.000.244,C:\Projects\!chrome\MPolis2\Unit1.pas=C:\Projects\!chrome\MPolis2\uQueue.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.573,=C:\Projects\!chrome\MPolis2\JSON\superobject.pas</Transaction>
     <Transaction>1899.12.30 00:00:00.000.715,C:\Projects\!chrome\MPolis2\Unit1.pas=C:\Projects\!chrome\MPolis2\uTasks.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.507,C:\Projects\!chrome\MPolis2\Unit1.pas=C:\Projects\!chrome\MPolis2\uGameItems.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.079,=C:\Projects\!chrome\MPolis2\Unit1.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.320,=C:\Projects\!chrome\MPolis2\Unit1.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.221,=C:\Projects\!chrome\MPolis2\Unit1.pas</Transaction>
   </Transactions>
 </BorlandProject>

@@ -276,6 +276,34 @@ object MainFrm: TMainFrm
       DesignSize = (
         688
         568)
+      object Label12: TLabel
+        Left = 3
+        Top = 16
+        Width = 29
+        Height = 16
+        Caption = 'Level'
+      end
+      object lbLevel: TLabel
+        Left = 48
+        Top = 16
+        Width = 15
+        Height = 16
+        Caption = '---'
+      end
+      object Label14: TLabel
+        Left = 3
+        Top = 38
+        Width = 37
+        Height = 16
+        Caption = 'Money'
+      end
+      object lbMoney: TLabel
+        Left = 46
+        Top = 38
+        Width = 15
+        Height = 16
+        Caption = '---'
+      end
       object lbLog: TListBox
         Left = 3
         Top = 67

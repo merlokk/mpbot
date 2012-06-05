@@ -13,7 +13,8 @@ uses
   uVK in 'uVK.pas',
   uFactories in 'uFactories.pas',
   superobject in 'JSON\superobject.pas',
-  uQueue in 'uQueue.pas';
+  uQueue in 'uQueue.pas',
+  uCalc in 'uCalc.pas';
 
 {$R *.res}
 

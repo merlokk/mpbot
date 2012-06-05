@@ -5,7 +5,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, ComCtrls, ExtCtrls,
-  uFasade, uLogger, uDB;
+  uFasade, uLogger, uDB, uGameItems;
 
 type
   TMainFrm = class(TForm)
@@ -46,6 +46,10 @@ type
     Label11: TLabel;
     edAppAuthKey: TEdit;
     btDownloadSWF: TButton;
+    Label12: TLabel;
+    lbLevel: TLabel;
+    Label14: TLabel;
+    lbMoney: TLabel;
     procedure btInitClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure btLoadDatrabaseClick(Sender: TObject);
@@ -170,15 +174,31 @@ begin
 end;
 
 procedure TMainFrm.Timer1Timer(Sender: TObject);
+var
+  world: TMWorld;
 begin
   Timer1.Enabled := false;
   try
     FViewCnt := FViewCnt + 1;
-    if FViewCnt > 5 then
+    if (Fasade <> nil) and (FViewCnt > 5) then
     begin
       FViewCnt := 0;
 
       GetSLLog(TStringList(lbLog.Items));
+      world := TMWorld.GetInstance;
+      if (world <> nil) and (world.Valid) then
+      begin
+        lbLevel.Caption := IntToStr(world.LastHeader.Level) + '/' +
+           IntToStr(world.LastHeader.RespectLevel) + ' (' +
+           IntToStr(world.LastHeader.Exp) + ')';
+        lbMoney.Caption := IntToStr(world.LastHeader.Gold) + '/' +
+           IntToStr(world.LastHeader.Coins);
+      end
+      else
+      begin
+        lbLevel.Caption := '---';
+        lbMoney.Caption := '---';
+      end;
     end;
 
     if cbAutorun.Checked then btRun.Click;
