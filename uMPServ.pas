@@ -129,7 +129,6 @@ function TMPServer.CheckAndPerform(World: TMWorld; Qu: TActionQueue): boolean;
 var
   data: string;
 begin
-
   Result := false;
   try
     if FSessionKey = '' then exit;
@@ -147,8 +146,6 @@ begin
       ' session_key=' + World.LastHeader.SessionKey, 4);
   except
   end;
-
-
 end;
 
 procedure TMPServer.FillFormData(vHttpRequest: TclHttpRequest; data: string);

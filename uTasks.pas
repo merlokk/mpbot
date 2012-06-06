@@ -1134,7 +1134,7 @@ begin
 
   if FQu.Count > 0 then
   begin
-//    FMPServ.CheckAndPerform(world, FQu);
+    FMPServ.CheckAndPerform(world, FQu);
     FQu.Clear;
   end;
 end;
