@@ -75,9 +75,9 @@ type
 
 {    function MakeGifts: TpFIBQuery;
     function GetFriendsList: TpFIBQuery;
-
+}
     function CalcRewardPoints(OwnerUserID: int64): boolean;
- }
+
     function GetGameItemId(name: String): cardinal;
     function GetGameItemName(id: cardinal): string;
     function GetGameItem(id: integer): TMGameItem; overload;
@@ -160,7 +160,7 @@ begin
   except
   end;
 end;
-     {
+
 function TMPdatabase.CalcRewardPoints(OwnerUserID: int64): boolean;
 begin
   Result := false;
@@ -177,7 +177,7 @@ begin
   except
   end;
 end;
-
+    {
 function TMPdatabase.CanHelpFriend(FriendID: int64): boolean;
 begin
   Result := false;

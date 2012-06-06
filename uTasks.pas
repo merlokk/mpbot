@@ -675,6 +675,7 @@ var
   room,
   room0: TMRoom;
   i: Integer;
+  fr: TFriendRec;
 begin
   inherited;
 
@@ -698,8 +699,17 @@ begin
   FDB.FriendsUpdate(world.Friends);
   FDB.FillGameFriends(FMPServ.AppFriends);
 
+  // update owner in DB (for wishlist and other things)
+  fr.id := world.OwnerID;
+  fr.level := world.LastHeader.Level;
+  fr.wishlist := world.LastHeader.WishListStr;
+  fr.RewardPoints := 0;
+  FDB.FriendUpdate(fr);
+  FDB.Commit;
+
   // update gifts
   FDB.RecvdGiftsUpdate(world.RecvdGift);
+  FDB.CalcRewardPoints(world.OwnerID);
 
   // add statistic
   if world.Valid and (room0 <> nil) then

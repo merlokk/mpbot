@@ -273,6 +273,7 @@ type
 
     function GetSrvRevision6: string;
     function GetSWFRevisionAppID: string;
+    function GetOwnerID: int64;
   public
     LastUpdate: TDateTime;
     LastHeader: TWorldHeader;
@@ -305,6 +306,7 @@ type
     property SrvRevision6: string read GetSrvRevision6;
     property Valid: boolean read FValid write FValid;
     property UserDisabled: boolean read FUserDisabled write FUserDisabled;
+    property OwnerID: int64 read GetOwnerID;
   end;
 
 implementation
@@ -709,6 +711,16 @@ begin
   if CInstance = nil then CInstance := TMWorld.Create;
 
   Result := CInstance;
+end;
+
+function TMWorld.GetOwnerID: int64;
+var
+  room: TMRoom;
+begin
+  Result := 0;
+  room := GetRoom(0);
+  if room <> nil then
+    Result := room.Header.OwnerID;
 end;
 
 function TMWorld.GetRoom(RoomID: integer): TMRoom;
