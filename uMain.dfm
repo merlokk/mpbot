@@ -80,13 +80,6 @@ object MainFrm: TMainFrm
         Height = 16
         Caption = 'flash player_ver'
       end
-      object Label10: TLabel
-        Left = 382
-        Top = 193
-        Width = 36
-        Height = 16
-        Caption = 'count:'
-      end
       object Label5: TLabel
         Left = 16
         Top = 117
@@ -233,32 +226,24 @@ object MainFrm: TMainFrm
       object edNeedGiftId: TEdit
         Left = 134
         Top = 187
-        Width = 242
+        Width = 539
         Height = 24
         TabOrder = 16
-        Text = 'gift_for_christmas_tree2'
-      end
-      object edNeedGiftCount: TEdit
-        Left = 424
-        Top = 187
-        Width = 64
-        Height = 24
-        TabOrder = 17
-        Text = '30'
+        Text = 'gift_for_christmas_tree2:30'
       end
       object edVKUserID: TEdit
         Left = 123
         Top = 114
         Width = 121
         Height = 24
-        TabOrder = 18
+        TabOrder = 17
       end
       object edAppAuthKey: TEdit
         Left = 424
         Top = 144
         Width = 249
         Height = 24
-        TabOrder = 19
+        TabOrder = 18
       end
       object btDownloadSWF: TButton
         Left = 16
@@ -266,7 +251,7 @@ object MainFrm: TMainFrm
         Width = 251
         Height = 25
         Caption = 'Download swf file'
-        TabOrder = 20
+        TabOrder = 19
         OnClick = btDownloadSWFClick
       end
     end
@@ -300,6 +285,20 @@ object MainFrm: TMainFrm
       object lbMoney: TLabel
         Left = 46
         Top = 38
+        Width = 15
+        Height = 16
+        Caption = '---'
+      end
+      object Label10: TLabel
+        Left = 171
+        Top = 16
+        Width = 24
+        Height = 16
+        Caption = 'Fuel'
+      end
+      object lbFuel: TLabel
+        Left = 201
+        Top = 16
         Width = 15
         Height = 16
         Caption = '---'

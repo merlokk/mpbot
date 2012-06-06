@@ -20,9 +20,9 @@ type
     FIBQueryCurs: TpFIBQuery;
     FIBTransaction: TpFIBTransaction;
 
-    FWantList: array of WantListRec;
+//    FWantList: array of WantListRec;
     FWantListLoaded: boolean;
-    FRewardList: array of WantListRec;
+//    FRewardList: array of WantListRec;
     FRewardLoaded: boolean;
 
     FExecContractList: array of ExecContractRec;
@@ -52,8 +52,9 @@ type
     function GetRewardPoints(userid: int64): Extended;
 //    procedure SubtractReward(gift: SendGiftRec);
 
-//    function FriendsDisable: boolean;
-//    function FriendUpdate(friend: FriendRec): boolean;
+    function FriendsDisable: boolean;
+    function FriendUpdate(friend: TFriendRec): boolean;
+    function FriendsUpdate(friends: TFriendRecArray): boolean;
     procedure FillGameFriends(lst: string);
     function FillGameFriendsFromDB: boolean;
 //    procedure SetFriendNextHelp(FriendID: int64; Date: TDateTime);
@@ -349,6 +350,7 @@ begin
   except
   end;
 end;
+ }
 
 function TMPdatabase.FriendsDisable: boolean;
 begin
@@ -365,22 +367,37 @@ begin
   end;
 end;
 
-function TMPdatabase.FriendUpdate(friend: FriendRec): boolean;
+function TMPdatabase.FriendsUpdate(friends: TFriendRecArray): boolean;
+var
+  i: Integer;
+begin
+  Result := true;
+  for i := 0 to length(friends) - 1 do
+  try
+    Result := Result and FriendUpdate(friends[i]);
+  except
+    break;
+  end;
+  FIBTransaction.Commit;
+end;
+
+function TMPdatabase.FriendUpdate(friend: TFriendRec): boolean;
 begin
   Result := false;
   if not Connected then exit;
   try
     FIBQuery.SQL.Text :=
-      'execute procedure FRIEND_UPDATE(' + IntToStr(friend.id) +
-      ',' + IntToStr(friend.level) +
-      ',''' + friend.wishlist + ''')';
+      'execute procedure FRIEND_UPDATE(' + IntToStr(friend.ID) +
+      ',' + IntToStr(friend.Level) +
+      ',''' + friend.WishList + ''')';
     FIBQuery.ExecQuery;
-    FIBTransaction.Commit;
     Result := true;
   except
   end;
 end;
 
+
+{
 function TMPdatabase.GetCAffectedItems(item: GameItemRec): string;
 var
  i: integer;

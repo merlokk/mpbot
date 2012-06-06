@@ -38,8 +38,6 @@ type
     edVerFP: TEdit;
     cbNeedGifts: TCheckBox;
     edNeedGiftId: TEdit;
-    Label10: TLabel;
-    edNeedGiftCount: TEdit;
     Label5: TLabel;
     edVKUserID: TEdit;
     Timer1: TTimer;
@@ -50,6 +48,8 @@ type
     lbLevel: TLabel;
     Label14: TLabel;
     lbMoney: TLabel;
+    Label10: TLabel;
+    lbFuel: TLabel;
     procedure btInitClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure btLoadDatrabaseClick(Sender: TObject);
@@ -193,11 +193,13 @@ begin
            IntToStr(world.LastHeader.Exp) + ')';
         lbMoney.Caption := IntToStr(world.LastHeader.Gold) + '/' +
            IntToStr(world.LastHeader.Coins);
+        lbFuel.Caption := IntToStr(world.LastHeader.Fuel);
       end
       else
       begin
         lbLevel.Caption := '---';
         lbMoney.Caption := '---';
+        lbFuel.Caption := '---';
       end;
     end;
 

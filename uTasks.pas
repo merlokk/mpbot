@@ -10,7 +10,7 @@ uses
 type
   TMTaskType = (ttBaseClass, ttInitDB, ttLoadSWF,
     ttInit, ttWorldUpdate, ttCurRoomWork, ttWorkDispatcher,
-    ttWhishListUpdate, ttGiftSend, ttFriendHelp,
+    ttWhishListUpdate, ttProcessGifts, ttFriendHelp,
     ttLast);
 const
   StrMTaskType: array [ttBaseClass..ttLast] of string = (
@@ -96,7 +96,7 @@ type
 
   TMTaskWhishListUpdate = class (TMTask)
   private
-//    FWlFields: array of WishDBRec;
+    {TODO:  REFACTORING}
     FCurrentWl,
     FNeededWl: TIntegerDynArray;
 
@@ -117,7 +117,7 @@ type
     procedure IntExecute; override;
   end;
 
-  TMTaskGiftSend = class (TMTask)
+  TMTaskProcessGifts = class (TMTask)
     constructor Create; override;
     procedure IntExecute; override;
   end;
@@ -213,7 +213,7 @@ begin
     ttCurRoomWork: Result := TMTaskCurRoomWork.Create;
     ttWorkDispatcher: Result := TMTaskWorkDispatcher.Create;
     ttWhishListUpdate: Result := TMTaskWhishListUpdate.Create;
-    ttGiftSend: Result := TMTaskGiftSend.Create;
+    ttProcessGifts: Result := TMTaskProcessGifts.Create;
     ttFriendHelp: Result := TMTaskFriendHelp.Create;
   else
   end;
@@ -658,10 +658,6 @@ begin
   FDB.Connect;
 
   FMPServ.AppFriends := FVK.GetAppFriends;
-  FDB.FillGameFriends(FMPServ.AppFriends);
-
-  // use cahed data if avaliable...
-//  Result := fvk.Authenticated or (fvk.GameFriendsCount > 0);
 end;
 
 { TMTaskWorldUpdate }
@@ -697,9 +693,15 @@ begin
     FMPServ.GetUserStat(world, i);
   end;
 
+  // update friends
   FVK.UpdateFriendsDetails(world.Friends);
-//  FDB.UpdateFriends();
+  FDB.FriendsUpdate(world.Friends);
+  FDB.FillGameFriends(FMPServ.AppFriends);
 
+  // update gifts
+
+
+  // add statistic
   if world.Valid and (room0 <> nil) then
   begin
     AddLog(
@@ -739,8 +741,7 @@ begin
   begin
     FTaskExec.ExecuteTask(ttWhishListUpdate);
 
-    if length(world.AvailGift) > 0 then
-      FTaskExec.ExecuteTask(ttGiftSend);
+    FTaskExec.ExecuteTask(ttProcessGifts);
   end;
 
 {
@@ -1042,6 +1043,7 @@ begin
     end;
   end;
 
+  AddLog(wl.GetStat);
   wl.Free;
 end;
 
@@ -1146,15 +1148,33 @@ end;
 
 { TMTaskGiftSend }
 
-constructor TMTaskGiftSend.Create;
+constructor TMTaskProcessGifts.Create;
 begin
   inherited;
-  SetTaskType(ttGiftSend);
+  SetTaskType(ttProcessGifts);
 end;
 
-procedure TMTaskGiftSend.IntExecute;
+procedure TMTaskProcessGifts.IntExecute;
+var
+  world: TMWorld;
+  i: Integer;
 begin
   inherited;
+
+  world := TMWorld.GetInstance;
+  if (world = nil) or (not world.Valid) then exit;
+
+  // process gifts rewards points
+  for i := 0 to length(world.Friends) - 1 do
+  begin
+
+  end;
+
+  // send gifts
+  if length(world.AvailGift) > 0 then
+  begin
+
+  end;
 
 end;
 

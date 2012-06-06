@@ -27,6 +27,10 @@ type
     function GetElmIndxByID(id: cardinal): integer;
 
     function GetCount: integer;
+    function GetCanUseCount: integer;
+    function GetCanUseElmCount: integer;
+    function GetCanUseStr: string;
+    function GetNeedCount: integer;
   public
     WList: array of TWishListRec;
 
@@ -39,7 +43,13 @@ type
     procedure SortByBalance;
     procedure FillGiftsCount(world: TMWorld);
 
+    function GetStat: string;
+
     property Count: integer read GetCount;
+    property CanUseCount: integer read GetCanUseCount;
+    property CanUseElmCount: integer read GetCanUseElmCount;
+    property CanUseStr: string read GetCanUseStr;
+    property NeedCount: integer read GetNeedCount;
   end;
 
 implementation
@@ -214,5 +224,65 @@ begin
   WList[Result].ID := GItem.ID;
   WList[Result].GameItem := GItem;
 end;
+
+function TWishListCalc.GetCanUseCount: integer;
+var
+ i: integer;
+begin
+  Result := 0;
+
+  for i := 0 to length(WList) - 1 do
+  if WList[i].canUse then
+    Result := Result + WList[i].HaveQty;
+end;
+
+function TWishListCalc.GetCanUseElmCount: integer;
+var
+ i: integer;
+begin
+  Result := 0;
+
+  for i := 0 to length(WList) - 1 do
+  if WList[i].canUse then
+    Result := Result + 1;
+end;
+
+function TWishListCalc.GetCanUseStr: string;
+var
+ i: integer;
+begin
+  Result := '';
+  for i := 0 to length(WList) - 1 do
+  if WList[i].canUse then
+    Result := Result + WList[i].GameItem.RusName + ':' + IntToStr(WList[i].HaveQty) + ',';
+  Result := Copy(Result, 1, length(Result) - 1);
+end;
+
+function TWishListCalc.GetNeedCount: integer;
+var
+ i: integer;
+begin
+  Result := 0;
+
+  for i := 0 to length(WList) - 1 do
+    if WList[i].GetBalance > 0 then
+      Result := Result + WList[i].GetBalance;
+end;
+
+function TWishListCalc.GetStat: string;
+var
+ c: integer;
+begin
+  c := CanUseElmCount;
+  Result :=
+    'gifts count: ' + IntToStr(Count) + '(' +
+    IntToStr(NeedCount) + ') ' +
+    'canuse: ' + IntToStr(CanUseCount);
+  if (c <> 0) and (c < 5)  then
+    Result := Result + ' (' + CanUseStr + ')';
+
+  if c <> 0 then Result := Result + '!!!';
+end;
+
 
 end.
