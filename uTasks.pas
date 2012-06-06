@@ -699,7 +699,7 @@ begin
   FDB.FillGameFriends(FMPServ.AppFriends);
 
   // update gifts
-
+  FDB.RecvdGiftsUpdate(world.RecvdGift);
 
   // add statistic
   if world.Valid and (room0 <> nil) then

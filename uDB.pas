@@ -62,8 +62,9 @@ type
     function AddFriendActivityPoints(FriendID: int64): boolean;
 //    function GetGroupedAppFriends(var GroupNum: integer; GroupCount: integer): string;
 
-//    function GiftsRecDisable: boolean;
-//    function GiftsRecUpdate(gift: GiftRec): boolean;
+    function RecvdGiftsDisable: boolean;
+    function RecvdGiftUpdate(gift: TGiftRec): boolean;
+    function RecvdGiftsUpdate(gifts: TGiftRecs): boolean;
 //    function GiftsAvailDisable: boolean;
 //    function GiftsAvailUpdate(gift: GiftRec): boolean;
 {
@@ -766,9 +767,9 @@ begin
     Result := true;
   except
   end;
-end;
+end;           }
 
-function TMPdatabase.GiftsRecDisable: boolean;
+function TMPdatabase.RecvdGiftsDisable: boolean;
 begin
   Result := false;
   if not Connected then exit;
@@ -783,24 +784,43 @@ begin
   end;
 end;
 
-function TMPdatabase.GiftsRecUpdate(gift: GiftRec): boolean;
+function TMPdatabase.RecvdGiftsUpdate(gifts: TGiftRecs): boolean;
+var
+  i: Integer;
+begin
+  Result := true;
+
+  RecvdGiftsDisable;
+  for i := 0 to length(gifts) - 1 do
+  try
+    Result := Result and RecvdGiftUpdate(gifts[i]);
+  except
+    break;
+  end;
+
+  FIBTransaction.Commit;
+end;
+
+function TMPdatabase.RecvdGiftUpdate(gift: TGiftRec): boolean;
 begin
   Result := false;
   if not Connected then exit;
 
   try
     FIBQuery.SQL.Text :=
-      'execute procedure UPDATE_GIFTS_REC(' +
-      IntToStr(gift.id) + ', ' +
-      IntToStr(gift.globalid) + ', ' +
-      IntToStr(gift.qty) + ', ' +
-      IntToStr(gift.from_user) + ')';
+      'update or insert into GIFTS_REC(ID, GAME_ITEMS_ID, QTY, FROM_FRIENDS_ID)' +
+      ' values (' +
+      IntToStr(gift.ID) + ', ' +
+      IntToStr(gift.GameItemID) + ', ' +
+      IntToStr(gift.Qty) + ', ' +
+      IntToStr(gift.FromUser) + ')' +
+      ' matching (ID)';
     FIBQuery.ExecQuery;
 
     Result := true;
   except
   end;
-end;                         }
+end;
 
 function TMPdatabase.FieldIsDeny(Name: string): boolean;
 var

@@ -103,6 +103,7 @@ type
     property GameItemID: cardinal read GetGameItemID;
     procedure Clear;
   end;
+  TGiftRecs = array of TGiftRec;
 
   TMField = class
   private
@@ -278,8 +279,8 @@ type
 
     Friends: TFriendRecArray;
     Barn: array of TBarnRec;
-    RecvdGift: array of TGiftRec;
-    AvailGift: array of TGiftRec;
+    RecvdGift: TGiftRecs;
+    AvailGift: TGiftRecs;
 
     class function GetInstance: TMWorld;
     constructor Create;
