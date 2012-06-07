@@ -725,6 +725,7 @@ begin
       ' xp='  + IntToStr(world.LastHeader.Exp)
       );
 
+    AddLog('today used gifts count: ' + IntToStr(FDB.GetTodayUsedGiftsCnt));
     if length(world.AvailGift) > 0 then
       AddLog('gifts ' + world.StrGiftStat);
 
@@ -751,13 +752,10 @@ begin
   begin
     FTaskExec.ExecuteTask(ttWhishListUpdate);
 
-    FTaskExec.ExecuteTask(ttProcessGifts);
+    // if we have gifts ---> send them)
+    if length(world.AvailGift) > 0 then
+      FTaskExec.ExecuteTask(ttProcessGifts);
   end;
-
-{
-  stat.FullUpdate;
-  AddLog('today used gifts count: ' + IntToStr(db.GetTodayUsedGiftsCnt));
-       }
 end;
 
 { TMTaskLoadSWF }
@@ -1174,18 +1172,12 @@ end;
 procedure TMTaskProcessGifts.IntExecute;
 var
   world: TMWorld;
-  i: Integer;
+//  i: Integer;
 begin
   inherited;
 
   world := TMWorld.GetInstance;
   if (world = nil) or (not world.Valid) then exit;
-
-  // process gifts rewards points
-  for i := 0 to length(world.Friends) - 1 do
-  begin
-
-  end;
 
   // send gifts
   if length(world.AvailGift) > 0 then

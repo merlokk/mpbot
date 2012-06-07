@@ -97,7 +97,7 @@ type
     function GetCPutKlass(FactoryName: string): string;
 //    function GetCAffectedItems(item: GameItemRec): string;
 
-//    function GetTodayUsedGiftsCnt: integer;
+    function GetTodayUsedGiftsCnt: integer;
   end;
 
 implementation
@@ -724,7 +724,7 @@ begin
   FIBQuery.ExecQuery;
   Result := FIBQuery.ParamValue('reward');
 end;
- {
+
 function TMPdatabase.GetTodayUsedGiftsCnt: integer;
 begin
   Result := 0;
@@ -735,7 +735,7 @@ begin
   FIBQuery.ExecQuery;
   Result := FIBQuery.ParamValue('cnt');
 end;
-
+ {
 function TMPdatabase.GiftsAvailDisable: boolean;
 begin
   Result := false;
