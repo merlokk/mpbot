@@ -748,6 +748,7 @@ begin
   else
     AddLog('invalid room data');
 
+  //  execute tasks after got valid world info
   if world.Valid then
   begin
     FTaskExec.ExecuteTask(ttWhishListUpdate);
@@ -823,8 +824,14 @@ end;
 procedure TMTaskCurRoomWork.IntExecute;
 var
   world: TMWorld;
-  room: TMRoom;
+  room,
+  roomn: TMRoom;
   cnt: integer;
+  i: Integer;
+  cWork1m: Integer;
+  nWork10m: Integer;
+  cWork10m: Integer;
+  nWork: Integer;
 begin
   inherited;
 
@@ -834,6 +841,7 @@ begin
   room := world.GetRoom(FMPServ.CurrRoomID);
   if room = nil then exit;
 
+  // ---- room tick
   //  ticks more then 30  or
   //  we have "old" ticks - older then 60 seconds   or
   //  we have no more ticks in 22 seconds
@@ -849,11 +857,13 @@ begin
     begin
       FMPServ.CheckAndPerform(world, FQu);
 
+      FQu.Clear;
       // if we put ticks to server - end of the task!!!
       exit;
     end;
   end;
 
+  // ---- room work
   // work items more then 30  or
   // work items more then tick items in 60 seconds * 3
   cnt := room.FieldsExecuteCount(false, true, 0, Now - 10 * OneSecond);
@@ -866,9 +876,49 @@ begin
     FQu.CurrentXP := world.LastHeader.Exp;
     room.FieldsExecute(15 + random(20), false, true);
     if FQu.Count > 0 then
+    begin
       FMPServ.CheckAndPerform(world, FQu);
 
-    FQu.Clear;
+      FQu.Clear;
+      // if we put work to server - end of the task!!!
+      exit;
+    end;
+  end;
+
+  // ---- room switching
+  // 1. last switching was at least 5 miutes ago
+  // 2. current room work  up to 60 seconds in future =0
+  // 3a. next room work > current room work * 1.3 in period of 10 min
+  // 3b. next room work count (- 10 sec) more, then 10
+  for i := 0 to world.GetRoomCount - 1 do
+  try
+    roomn := world.GetRoom(i);
+    if roomn = nil then continue;
+
+    cWork1m := room.FieldsExecuteCount(true, true, 0, Now + 60 * OneSecond);
+    nWork10m := roomn.FieldsExecuteCount(true, true, 0, Now + 10 * OneMinute);
+    cWork10m := room.FieldsExecuteCount(true, true, 0, Now + 10 * OneMinute);
+    nWork := roomn.FieldsExecuteCount(true, true, 0, Now - 10 * OneSecond);
+
+    if (i <> room.ID) and
+       (true) and
+       (cWork1m <= 0) and
+       ( (nWork10m > cWork10m * 1.3 ) or
+         (nWork > 10)
+       )
+    then
+    begin
+      AddLog('NEED SWITCH:' +
+        IntToStr(room.ID) + '->' + IntToStr(i) +
+        ' cWork60:' + IntToStr(cWork1m) +
+        ' nWork10m:' + IntToStr(nWork10m) +
+        ' cWork10m:' + IntToStr(cWork10m) +
+        ' nWork:' + IntToStr(nWork)
+        );
+      FMPServ.GetUserStat(world, i);
+    end;
+  except
+    exit;
   end;
 end;
 
@@ -1184,6 +1234,63 @@ begin
   begin
 
   end;
+
+{procedure TMPUserGifts.Calc(st: MPstat);
+var
+ FIBQuery: TpFIBQuery;
+ sg: SendGiftRec;
+begin
+  FIBQuery := db.MakeGifts;
+  while not FIBQuery.Eof do
+  begin
+    sg.globalid := FIBQuery.FieldByName('GIFT_ID').AsInteger;
+    sg.id := FIBQuery.FieldByName('gift_un_id').AsInteger;
+    sg.to_user := FIBQuery.FieldByName('ID').AsInt64;
+    sg.sent := false;
+
+    if st.MakeGift(sg) then
+    begin
+      SetLength(FSendGifts, length(FSendGifts) + 1);
+      FSendGifts[length(FSendGifts) - 1] := sg;
+    end;
+
+    FIBQuery.Next;
+  end;
+  FIBQuery.Close;
+
+  FIBQuery := db.GetFriendsList;
+  while not FIBQuery.Eof do
+  begin
+    sg.id := 0;
+    sg.to_user := FIBQuery.FieldByName('ID').AsInt64;
+    sg.sent := false;
+
+    if st.CanGift(sg.to_user) then
+    begin
+      st.GetCoolGift(sg);
+      if st.MakeGift(sg) then
+      begin
+        SetLength(FSendGifts, length(FSendGifts) + 1);
+        FSendGifts[length(FSendGifts) - 1] := sg;
+      end;
+    end;
+
+    FIBQuery.Next;
+  end;
+  FIBQuery.Close;
+end;
+
+procedure TMPUserGifts.CalcMinusReward;
+var
+ i: integer;
+begin
+  for i := 0 to length(FSendGifts) - 1 do
+    if FSendGifts[i].sent then
+      db.SubtractReward(FSendGifts[i]);
+  db.Commit;
+end;
+}
+
 
 end;
 

@@ -15,6 +15,8 @@ const
     'ASBOOL',
     'ASVARCHAR',
     'ASFLOAT');
+
+  PPL_GUARD_SPACE = 2000;   // population guard space
 type
   TMWorld = class;
   TMRoom = class;
@@ -1228,7 +1230,7 @@ begin
   try
     if (State = STATE_STANDBY) and
        (GameItem.canPick) and
-       (Room.Header.GetFreePopulation > 2000)
+       (Room.Header.GetFreePopulation > PPL_GUARD_SPACE)
     then
     begin
       elm := Qu.Add(Room.ID, ID, faPick,
@@ -1255,6 +1257,10 @@ end;
 function TMFieldHouse.GetActionDT(canTick, canWork: boolean): TDateTime;
 begin
   Result := inherited;
+
+  if FRoom.Header.GetFreePopulation <
+     PPL_GUARD_SPACE + GameItem.GetAttr('population_increase').AsInteger
+  then exit;
 
   if canTick and
      (State = STATE_WORK)
