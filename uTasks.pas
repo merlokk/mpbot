@@ -3,7 +3,7 @@ unit uTasks;
 interface
 uses
   SysUtils, Variants, Types, Classes, IOUtils, Forms, XMLIntf, XMLDoc, StrUtils,
-  Windows, DateUtils,
+  Windows, DateUtils, ShellAPI,
   uMPserv, uVK, uDB, uGameItems, uLogger, uQueue, uFactories,
   uCalc, uDefs;
 
@@ -805,6 +805,13 @@ begin
     FileName);
 
   AddLog('completed. length(bytes): ' + IntToStr(res));
+  ShellExecute(
+    0,
+    'open',
+    'explorer.exe',
+    PChar('/select, "' + FileName + '"'),
+    nil,
+    SW_SHOWNORMAL);
 end;
 
 { TMTaskCurRoomWork }
