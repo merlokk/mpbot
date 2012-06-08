@@ -3,6 +3,7 @@ unit uGameItems;
 interface
 uses
   Windows, SysUtils, Variants, Classes, StrUtils, superobject,
+  DateUtils,
   uDefs, uQueue;
 
 type
@@ -254,6 +255,7 @@ type
     procedure FieldsClearTick;
     procedure FieldsExecute(MaxCount: integer; canTick, canWork: boolean); virtual;
     function FieldsExecuteCount(canTick, canWork: boolean; FromDate, ToDate: TDateTime): integer;
+    function FieldGrafFill(var gr: TFieldGraf): boolean;
 
     property ID: integer read FID write FID;
     property FieldsCount: integer read GetFieldsCount;
@@ -888,6 +890,26 @@ begin
         FItems[j] := FItems[j + 1];
       SetLength(FItems, length(FItems) - 1);
     end;
+end;
+
+function TMRoom.FieldGrafFill(var gr: TFieldGraf): boolean;
+var
+  i: Integer;
+  room: TMRoom;
+  cdt: TDateTime;
+begin
+  Result := false;
+  try
+    for i := 0 to 12 do gr[i] := 0;
+
+    cdt := Now;
+    gr[0] := FieldsExecuteCount(true, true, 0, cdt);
+    for i := 1 to 12 do
+      gr[i] := FieldsExecuteCount(true, true, cdt + 5 * OneMinute * (i-1), cdt + 5 * OneMinute * i);
+
+    Result := true;
+  except
+  end;
 end;
 
 procedure TMRoom.FieldsClearTick;

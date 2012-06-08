@@ -2,8 +2,8 @@ unit uFasade;
 
 interface
 uses
-  SysUtils, Variants, Classes,
-  uGameItems, uTasks, uVK, uMPServ, uLogger;
+  SysUtils, Variants, Classes, Graphics, Math,
+  uGameItems, uTasks, uVK, uMPServ, uLogger, uDefs;
 
 type
   TFasadeParams = packed record
@@ -39,6 +39,8 @@ type
 
     procedure DBUpdate;
     procedure LoadSWF;
+
+    procedure PaintGraf(world: TMWorld; cnv: TCanvas);
   end;
 
 implementation
@@ -106,6 +108,69 @@ begin
   finally
     FWorking := false;
   end;
+end;
+
+procedure TMPFasade.PaintGraf(world: TMWorld; cnv: TCanvas);
+var
+ i,
+ maxItems,
+ delta,
+ tall: integer;
+ data: array[0..1] of TFieldGraf;
+ room: TMRoom;
+begin
+  for i := 0 to 1 do
+  begin
+    room := world.GetRoom(i);
+    if room = nil then continue;
+    room.FieldGrafFill(data[i]);
+  end;
+
+  cnv.Brush.Color := clBtnFace;
+  cnv.FillRect(cnv.ClipRect);
+
+  delta := (cnv.ClipRect.Right - cnv.ClipRect.Left) div 13;
+  tall := (cnv.ClipRect.Bottom - cnv.ClipRect.Top);
+
+  maxItems := 0;
+  for i := 0 to 12 do
+  begin
+    maxItems := Max(maxItems, data[0][i]);
+    maxItems := Max(maxItems, data[1][i]);
+  end;
+
+  if maxItems = 0 then exit;
+
+  cnv.Brush.Color := clBlue;
+  for i := 0 to 12 do
+  begin
+    cnv.FillRect(Rect(
+      i * delta + 1,
+      0,
+      i * delta + 2,
+      tall));
+  end;
+
+  for i := 0 to 12 do
+  begin
+    cnv.Brush.Color := clGreen;
+    if data[0][i] > 0 then
+      cnv.FillRect(Rect(
+        i * delta + 4,
+        tall - max(Trunc(data[0][i] / maxItems * tall), 1),
+        i * delta + 4 + (delta div 3 - 1),
+        tall));
+
+    cnv.Brush.Color := clOlive;
+    if data[1][i] > 0 then
+      cnv.FillRect(Rect(
+        i * delta + 4 + (delta div 3),
+        tall - max(Trunc(data[1][i] / maxItems * tall), 1),
+        i * delta + 4 + ((delta div 3)*2 - 1),
+        tall));
+
+  end;
+
 end;
 
 procedure TMPFasade.Run;

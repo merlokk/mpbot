@@ -3,7 +3,7 @@ object MainFrm: TMainFrm
   Top = 0
   Caption = 'MPolis2'
   ClientHeight = 599
-  ClientWidth = 696
+  ClientWidth = 733
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -17,7 +17,7 @@ object MainFrm: TMainFrm
   object PageControl1: TPageControl
     Left = 0
     Top = 0
-    Width = 696
+    Width = 733
     Height = 599
     ActivePage = tsEditor
     Align = alClient
@@ -259,7 +259,7 @@ object MainFrm: TMainFrm
       Caption = 'Log'
       ImageIndex = 1
       DesignSize = (
-        688
+        725
         568)
       object Label12: TLabel
         Left = 3
@@ -303,10 +303,42 @@ object MainFrm: TMainFrm
         Height = 16
         Caption = '---'
       end
+      object imGraph: TImage
+        Left = 3
+        Top = 519
+        Width = 715
+        Height = 46
+        ParentCustomHint = False
+        Anchors = [akLeft, akBottom]
+        ParentShowHint = False
+        ShowHint = True
+      end
+      object Label13: TLabel
+        Left = 689
+        Top = 3
+        Width = 33
+        Height = 16
+        Caption = 'Room'
+      end
+      object lbCurRoom: TLabel
+        Left = 689
+        Top = 25
+        Width = 33
+        Height = 24
+        Alignment = taCenter
+        AutoSize = False
+        Caption = '---'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -20
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+      end
       object lbLog: TListBox
         Left = 3
         Top = 67
-        Width = 682
+        Width = 719
         Height = 446
         Anchors = [akLeft, akTop, akRight, akBottom]
         TabOrder = 0

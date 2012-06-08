@@ -39,7 +39,7 @@ procedure GetSLLog(sl: TStringList);
 
 implementation
 const
-  FMaxSLCount = 23;
+  FMaxSLCount = 27;
 
 var
   FSLLog: TStringList;

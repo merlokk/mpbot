@@ -5,7 +5,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, ComCtrls, ExtCtrls,
-  uFasade, uLogger, uDB, uGameItems;
+  uFasade, uLogger, uDB, uGameItems, uMPServ;
 
 type
   TMainFrm = class(TForm)
@@ -50,6 +50,9 @@ type
     lbMoney: TLabel;
     Label10: TLabel;
     lbFuel: TLabel;
+    imGraph: TImage;
+    Label13: TLabel;
+    lbCurRoom: TLabel;
     procedure btInitClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure btLoadDatrabaseClick(Sender: TObject);
@@ -194,12 +197,16 @@ begin
         lbMoney.Caption := IntToStr(world.LastHeader.Gold) + '/' +
            IntToStr(world.LastHeader.Coins);
         lbFuel.Caption := IntToStr(world.LastHeader.Fuel);
+        lbCurRoom.Caption := IntToStr(TMPServer.GetInstance.CurrRoomID);
+
+        Fasade.PaintGraf(world, imGraph.Canvas);
       end
       else
       begin
         lbLevel.Caption := '---';
         lbMoney.Caption := '---';
         lbFuel.Caption := '---';
+        lbCurRoom.Caption := '---';
       end;
     end;
 

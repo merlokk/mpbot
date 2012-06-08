@@ -16,34 +16,24 @@ File_13=TSourceModule,'C:\Projects\!chrome\MPolis\defs.pas',0,1,1,21,98,0,0,,{1
 File_14=TSourceModule,'C:\Projects\!chrome\MPolis\MPdb.pas',0,1,593,23,616,0,0,,
 
 [Modules]
-Module0=C:\Projects\!chrome\MPolis2\uTasks.pas
-Module1=C:\Projects\!chrome\MPolis2\uFasade.pas
-Module2=C:\Projects\!chrome\MPolis2\uCalc.pas
-Module3=C:\Projects\!chrome\MPolis2\uGameItems.pas
-Module4=C:\Projects\!chrome\MPolis2\uDefs.pas
-Module5=C:\Projects\!chrome\MPolis2\uQueue.pas
-Module6=C:\Projects\!chrome\MPolis2\uMain.pas
-Module7=C:\Projects\!chrome\MPolis2\uDB.pas
-Module8=C:\Projects\!chrome\MPolis2\uFactories.pas
-Module9=C:\Projects\!chrome\MPolis2\uMPServ.pas
-Module10=C:\Projects\!chrome\MPolis2\uVK.pas
+Module0=C:\Projects\!chrome\MPolis2\uMain.pas
+Module1=C:\Projects\!chrome\MPolis2\uGameItems.pas
+Module2=C:\Projects\!chrome\MPolis2\uDefs.pas
+Module3=C:\Projects\!chrome\MPolis2\uTasks.pas
+Module4=C:\Projects\!chrome\MPolis2\uFasade.pas
+Module5=C:\Projects\!chrome\MPolis2\uVK.pas
+Module6=C:\Projects\!chrome\MPolis2\uMPServ.pas
+Module7=C:\Projects\!chrome\MPolis2\uCalc.pas
+Module8=C:\Projects\!chrome\MPolis2\uDB.pas
+Module9=C:\Projects\!chrome\MPolis2\uQueue.pas
+Module10=C:\Projects\!chrome\MPolis2\uFactories.pas
 Module11=C:\Projects\!chrome\MPolis2\uLogger.pas
 Count=12
 EditWindowCount=1
 
-[C:\Projects\!chrome\MPolis2\uTasks.pas]
+[C:\Projects\!chrome\MPolis2\uMain.pas]
 ModuleType=TSourceModule
-FormState=0
-FormOnTop=0
-
-[C:\Projects\!chrome\MPolis2\uFasade.pas]
-ModuleType=TSourceModule
-FormState=0
-FormOnTop=0
-
-[C:\Projects\!chrome\MPolis2\uCalc.pas]
-ModuleType=TSourceModule
-FormState=0
+FormState=1
 FormOnTop=0
 
 [C:\Projects\!chrome\MPolis2\uGameItems.pas]
@@ -56,22 +46,17 @@ ModuleType=TSourceModule
 FormState=0
 FormOnTop=0
 
-[C:\Projects\!chrome\MPolis2\uQueue.pas]
+[C:\Projects\!chrome\MPolis2\uTasks.pas]
 ModuleType=TSourceModule
 FormState=0
 FormOnTop=0
 
-[C:\Projects\!chrome\MPolis2\uMain.pas]
-ModuleType=TSourceModule
-FormState=1
-FormOnTop=0
-
-[C:\Projects\!chrome\MPolis2\uDB.pas]
+[C:\Projects\!chrome\MPolis2\uFasade.pas]
 ModuleType=TSourceModule
 FormState=0
 FormOnTop=0
 
-[C:\Projects\!chrome\MPolis2\uFactories.pas]
+[C:\Projects\!chrome\MPolis2\uVK.pas]
 ModuleType=TSourceModule
 FormState=0
 FormOnTop=0
@@ -81,7 +66,22 @@ ModuleType=TSourceModule
 FormState=0
 FormOnTop=0
 
-[C:\Projects\!chrome\MPolis2\uVK.pas]
+[C:\Projects\!chrome\MPolis2\uCalc.pas]
+ModuleType=TSourceModule
+FormState=0
+FormOnTop=0
+
+[C:\Projects\!chrome\MPolis2\uDB.pas]
+ModuleType=TSourceModule
+FormState=0
+FormOnTop=0
+
+[C:\Projects\!chrome\MPolis2\uQueue.pas]
+ModuleType=TSourceModule
+FormState=0
+FormOnTop=0
+
+[C:\Projects\!chrome\MPolis2\uFactories.pas]
 ModuleType=TSourceModule
 FormState=0
 FormOnTop=0
@@ -93,7 +93,7 @@ FormOnTop=0
 
 [EditWindow0]
 ViewCount=12
-CurrentEditView=C:\Projects\!chrome\MPolis2\uTasks.pas
+CurrentEditView=C:\Projects\!chrome\MPolis2\uMain.pas
 View0=0
 View1=1
 View2=2
@@ -133,14 +133,14 @@ BottomPanelClients=DockSite1,MessageView
 BottomPanelData=0000080001020100000009000000446F636B5369746531D43000000000000002F3050000000000000100000000D43000000F0000004D65737361676556696577466F726DFFFFFFFF
 BottomMiddlePanelSize=0
 BottomMiddlePanelClients=DockSite0
-BottomMiddelPanelData=0000080001020100000009000000446F636B53697465309A1D00000000000002D804000000000000FFFFFFFF
+BottomMiddelPanelData=0000080001020100000009000000446F636B53697465309A1D00000000000002A505000000000000FFFFFFFF
 
 [View0]
 CustomEditViewType=TEditView
 Module=C:\Projects\!chrome\MPolis2\uMain.pas
-CursorX=11
-CursorY=161
-TopLine=82
+CursorX=1
+CursorY=199
+TopLine=177
 LeftCol=1
 Elisions=
 Bookmarks=
@@ -149,9 +149,9 @@ EditViewName=C:\Projects\!chrome\MPolis2\uMain.pas
 [View1]
 CustomEditViewType=TEditView
 Module=C:\Projects\!chrome\MPolis2\uFasade.pas
-CursorX=18
-CursorY=64
-TopLine=59
+CursorX=1
+CursorY=113
+TopLine=111
 LeftCol=1
 Elisions=
 Bookmarks=
@@ -160,9 +160,9 @@ EditViewName=C:\Projects\!chrome\MPolis2\uFasade.pas
 [View2]
 CustomEditViewType=TEditView
 Module=C:\Projects\!chrome\MPolis2\uTasks.pas
-CursorX=1
-CursorY=1099
-TopLine=1089
+CursorX=26
+CursorY=954
+TopLine=934
 LeftCol=1
 Elisions=
 Bookmarks=
@@ -171,9 +171,9 @@ EditViewName=C:\Projects\!chrome\MPolis2\uTasks.pas
 [View3]
 CustomEditViewType=TEditView
 Module=C:\Projects\!chrome\MPolis2\uCalc.pas
-CursorX=1
-CursorY=95
-TopLine=72
+CursorX=14
+CursorY=38
+TopLine=32
 LeftCol=1
 Elisions=
 Bookmarks=
@@ -182,8 +182,8 @@ EditViewName=C:\Projects\!chrome\MPolis2\uCalc.pas
 [View4]
 CustomEditViewType=TEditView
 Module=C:\Projects\!chrome\MPolis2\uVK.pas
-CursorX=1
-CursorY=189
+CursorX=57
+CursorY=187
 TopLine=163
 LeftCol=1
 Elisions=
@@ -193,9 +193,9 @@ EditViewName=C:\Projects\!chrome\MPolis2\uVK.pas
 [View5]
 CustomEditViewType=TEditView
 Module=C:\Projects\!chrome\MPolis2\uMPServ.pas
-CursorX=29
-CursorY=883
-TopLine=883
+CursorX=1
+CursorY=132
+TopLine=147
 LeftCol=1
 Elisions=
 Bookmarks=
@@ -216,11 +216,11 @@ EditViewName=C:\Projects\!chrome\MPolis2\uQueue.pas
 CustomEditViewType=TEditView
 Module=C:\Projects\!chrome\MPolis2\uGameItems.pas
 CursorX=1
-CursorY=459
-TopLine=441
+CursorY=908
+TopLine=888
 LeftCol=1
 Elisions=
-Bookmarks=
+Bookmarks={1,908,93}
 EditViewName=C:\Projects\!chrome\MPolis2\uGameItems.pas
 
 [View8]
@@ -237,9 +237,9 @@ EditViewName=C:\Projects\!chrome\MPolis2\uFactories.pas
 [View9]
 CustomEditViewType=TEditView
 Module=C:\Projects\!chrome\MPolis2\uDB.pas
-CursorX=13
-CursorY=679
-TopLine=654
+CursorX=18
+CursorY=737
+TopLine=712
 LeftCol=1
 Elisions=
 Bookmarks=
@@ -248,9 +248,9 @@ EditViewName=C:\Projects\!chrome\MPolis2\uDB.pas
 [View10]
 CustomEditViewType=TEditView
 Module=C:\Projects\!chrome\MPolis2\uDefs.pas
-CursorX=21
-CursorY=9
-TopLine=1
+CursorX=28
+CursorY=43
+TopLine=31
 LeftCol=1
 Elisions=
 Bookmarks=
@@ -293,10 +293,8 @@ Dockable=1
 StayOnTop=0
 
 [Breakpoints]
-Count=3
-Breakpoint0='C:\Projects\!chrome\MPolis2\uGameItems.pas',1298,'',0,1,'',1,0,0,'',1,'','','',0,''
-Breakpoint1='C:\Projects\!chrome\MPolis2\uTasks.pas',1027,'',0,1,'',1,0,0,'',1,'','','',0,''
-Breakpoint2='C:\Projects\!chrome\MPolis2\uTasks.pas',1098,'',0,1,'',1,0,0,'',1,'','','',0,''
+Count=1
+Breakpoint0='C:\Projects\!chrome\MPolis2\uGameItems.pas',1339,'',0,1,'',1,0,0,'',1,'','','',0,''
 
 [EmbarcaderoWin32Debugger_AddressBreakpoints]
 Count=0
@@ -307,8 +305,8 @@ Create=1
 Visible=1
 Docked=0
 State=2
-Left=180
-Top=364
+Left=141
+Top=273
 Width=8930
 Height=8525
 MaxLeft=-8
@@ -546,11 +544,11 @@ State=0
 Left=0
 Top=0
 Width=2336
-Height=737
+Height=949
 MaxLeft=-1
 MaxTop=-1
 ClientWidth=2336
-ClientHeight=737
+ClientHeight=949
 TBDockHeight=1152
 LRDockWidth=3672
 Dockable=1
@@ -583,6 +581,11 @@ LRDockWidth=1891
 Dockable=1
 StayOnTop=0
 SplitPos=111
+
+[PropInspDesignerSelection]
+ArrangeBy=Name
+SelectedItem=Name,CustomHint
+ExpandedItems=Margins=0
 
 [DataExplorer]
 PercentageSizes=1
@@ -909,12 +912,12 @@ State=0
 Left=0
 Top=23
 Width=2336
-Height=1051
+Height=1263
 MaxLeft=-1
 MaxTop=-1
 ClientWidth=2336
-ClientHeight=1051
-TBDockHeight=1051
+ClientHeight=1263
+TBDockHeight=1263
 LRDockWidth=2336
 Dockable=1
 StayOnTop=0

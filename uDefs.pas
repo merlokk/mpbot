@@ -40,6 +40,8 @@ const
   GUARD_TIME = 60 / SecsPerDay; // 60 sec
 
 type
+  TFieldGraf = array [0..12] of integer;
+
   WantListRec = packed record
     GiftID: cardinal;
     Score: extended;
