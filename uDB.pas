@@ -8,6 +8,12 @@ uses
   uGameItems;
 
 type
+  TNameValRec = record
+    Name: string;
+    Value: integer;
+  end;
+  TNameValArr = array of TNameValRec;
+
   TMPdatabase = class
   protected
     class var FInstance: TMPdatabase;
@@ -46,8 +52,13 @@ type
     function Connect: boolean;
     procedure Commit;
 
-    function SetParam(ParamName, ParamValue: string): boolean;
-    function GetParam(ParamName: string; Default: string = ''): string;
+    function SetParam(ParamName: string; ParamValue: Integer): boolean; overload;
+    function SetParam(ParamName, ParamValue: string): boolean; overload;
+    function SetParam(ParamGroup: integer; ParamName: string; ParamValue: integer): boolean; overload;
+    function SetParam(ParamGroup: integer; ParamName: string; ParamValue: string): boolean; overload;
+
+    function GetParam(ParamGroup: integer; ParamName: string; Default: string = ''): string;
+    function GetParamGroups: TNameValArr;
 
     function GetRewardPoints(userid: int64): Extended;
 //    procedure SubtractReward(gift: SendGiftRec);
@@ -73,8 +84,8 @@ type
 }
     function GetPriorityBuildList: TStringDynArray;
 
-{    function MakeGifts: TpFIBQuery;
-    function GetFriendsList: TpFIBQuery;
+    function MakeGifts: TpFIBQuery;
+{    function GetFriendsList: TpFIBQuery;
 }
     function CalcRewardPoints(OwnerUserID: int64): boolean;
 
@@ -822,6 +833,17 @@ begin
   end;
 end;
 
+function TMPdatabase.SetParam(ParamGroup: integer; ParamName: string;
+  ParamValue: integer): boolean;
+begin
+  Result := SetParam(ParamGroup, ParamName, IntToStr(ParamValue));
+end;
+
+function TMPdatabase.SetParam(ParamName: string; ParamValue: Integer): boolean;
+begin
+  Result := SetParam(-1, ParamName, IntToStr(ParamValue));
+end;
+
 function TMPdatabase.FieldIsDeny(Name: string): boolean;
 var
   i: integer;
@@ -851,12 +873,13 @@ begin
     exit;
   end;
 end;
+}
 
 function TMPdatabase.MakeGifts: TpFIBQuery;
 begin
   Result := nil;
   if not Connected then exit;
-
+   {
   try
     FIBQueryCurs.SQL.Text :=
       'select sq.*, gr.rewardpoints ' +
@@ -873,10 +896,10 @@ begin
     FIBQueryCurs.ExecQuery;
     Result := FIBQueryCurs;
   except
-  end;
+  end;   }
 
 end;
-
+{
 function TMPdatabase.QueryWantList: boolean;
 begin
   if not FWantListLoaded then FillWantList;
@@ -1063,11 +1086,24 @@ end;
 
 function TMPdatabase.SetParam(ParamName, ParamValue: string): boolean;
 begin
+  Result := SetParam(-1, ParamName, ParamValue);
+end;
+
+function TMPdatabase.SetParam(ParamGroup: integer; ParamName: string;
+  ParamValue: string): boolean;
+var
+  sparam: string;
+begin
   Result := false;
   if not FConnected then exit;
   try
-    FIBQuery.SQL.Text := 'update or insert into params (id, name, ATTR_TYPE_ID, val) values ' +
-      '(gen_id(gen_params_id,1), ''' + ParamName + ''', 4, ''' + ParamValue + ''') matching (name)';
+    if ParamGroup < 0 then
+      sparam := 'NULL'
+    else
+      sparam := IntToStr(ParamGroup);
+
+    FIBQuery.SQL.Text := 'update or insert into params (id, name, param_group_id, ATTR_TYPE_ID, val) values ' +
+      '(gen_id(gen_params_id,1), ''' + ParamName + ''', ' + sparam +', 4, ''' + ParamValue + ''') matching (name, param_group_id)';
     FIBQuery.ExecQuery;
 
     Commit;
@@ -1076,13 +1112,22 @@ begin
   end;
 end;
 
-function TMPdatabase.GetParam(ParamName: string; Default: string = ''): string;
+function TMPdatabase.GetParam(ParamGroup: integer; ParamName: string; Default: string = ''): string;
+var
+  cond: string;
 begin
   Result := Default;
   if not FConnected then exit;
   try
+    if ParamGroup < 0 then
+      cond := 'PARAM_GROUP_ID is NULL'
+    else
+      cond := 'PARAM_GROUP_ID=' + IntToStr(ParamGroup);
+
     FIBQueryCurs.Close;
-    FIBQueryCurs.SQL.Text := 'select * from params where NAME=''' + ParamName + ''' ';
+    FIBQueryCurs.SQL.Text :=
+      'select * from params where (NAME=''' + ParamName + ''') and' +
+        '(' + cond + ')';
     FIBQueryCurs.ExecQuery;
 
     Result := FIBQueryCurs.FieldByName('VAL').AsString;
@@ -1093,5 +1138,29 @@ begin
   end;
 end;
 
+
+function TMPdatabase.GetParamGroups: TNameValArr;
+begin
+  try
+    FIBQueryCurs.Close;
+    FIBQueryCurs.SQL.Text := 'select * from PARAM_GROUP';
+    FIBQueryCurs.ExecQuery;
+
+    SetLength(Result, 0);
+
+    while not FIBQueryCurs.Eof do
+    begin
+      SetLength(Result, length(Result) + 1);
+      Result[length(Result) - 1].Value :=
+        FIBQueryCurs.FieldByName('ID').AsInteger;
+      Result[length(Result) - 1].Name :=
+        FIBQueryCurs.FieldByName('NAME').AsString;
+
+      FIBQueryCurs.Next;
+    end;
+    FIBQueryCurs.Close;
+  except
+  end;
+end;
 
 end.

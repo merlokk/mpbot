@@ -53,6 +53,8 @@ type
     imGraph: TImage;
     Label13: TLabel;
     lbCurRoom: TLabel;
+    Label15: TLabel;
+    cbParamGroup: TComboBox;
     procedure btInitClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure btLoadDatrabaseClick(Sender: TObject);
@@ -61,10 +63,16 @@ type
     procedure btDownloadSWFClick(Sender: TObject);
     procedure btParamSaveClick(Sender: TObject);
     procedure btParamLoadClick(Sender: TObject);
+    procedure cbParamGroupChange(Sender: TObject);
   private
     { Private declarations }
     Fasade: TMPFasade;
     FViewCnt: integer;
+
+    function GetParamGroup: integer;
+    procedure SetParamGroup(grp: string);
+    procedure FillParamGroups;
+    procedure ParamGroupLoad;
   public
     { Public declarations }
   end;
@@ -124,17 +132,16 @@ begin
   if not db.Connected then db.Connect;
   if db.Connected then
   begin
-    edAppAuthKey.Text := db.GetParam('AppAuthKey', '');
-    edVerStat.Text := db.GetParam('VerStat', '1');
-    edVerFPStat.Text := db.GetParam('VerFPStat', '11');
-    edVerCheck.Text := db.GetParam('VerCheck', '5');
-    edVerFP.Text := db.GetParam('VerFP', 'WIN%2011,2,202,235');
-    edVKUserID.Text := db.GetParam('VKUserID', '0');
-    edRevision.Text := db.GetParam('Revision', '');
-    edVKUser.Text := db.GetParam('VKUser', '');
-    edVKPasswd.Text := db.GetParam('VKPasswd', '');
-    edVKAccessKey.Text := db.GetParam('VKAccessKey', '');
-    edVKAppID.Text := db.GetParam('VKAppID', '1858070');
+    SetParamGroup(db.GetParam(-1, 'CurParamGroup', ''));
+
+    edVerStat.Text := db.GetParam(-1, 'VerStat', '1');
+    edVerFPStat.Text := db.GetParam(-1, 'VerFPStat', '11');
+    edVerCheck.Text := db.GetParam(-1, 'VerCheck', '5');
+    edVerFP.Text := db.GetParam(-1, 'VerFP', 'WIN%2011,2,202,235');
+    edRevision.Text := db.GetParam(-1, 'Revision', '');
+    edVKAppID.Text := db.GetParam(-1, 'VKAppID', '1858070');
+
+    ParamGroupLoad;
   end;
 
 end;
@@ -142,21 +149,24 @@ end;
 procedure TMainFrm.btParamSaveClick(Sender: TObject);
 var
   db: TMPdatabase;
+  grp: integer;
 begin
   db := TMPdatabase.GetInstance;
   if not db.Connected then db.Connect;
   if not db.Connected then exit;
 
-  db.SetParam('AppAuthKey', edAppAuthKey.Text);
+  grp := GetParamGroup;
+  db.SetParam('CurParamGroup', grp);
+  db.SetParam(grp, 'AppAuthKey', edAppAuthKey.Text);
   db.SetParam('VerStat', edVerStat.Text);
   db.SetParam('VerFPStat', edVerFPStat.Text);
   db.SetParam('VerCheck', edVerCheck.Text);
   db.SetParam('VerFP', edVerFP.Text);
-  db.SetParam('VKUserID', edVKUserID.Text);
+  db.SetParam(grp, 'VKUserID', edVKUserID.Text);
   db.SetParam('Revision', edRevision.Text);
-  db.SetParam('VKUser', edVKUser.Text);
-  db.SetParam('VKPasswd', edVKPasswd.Text);
-  db.SetParam('VKAccessKey', edVKAccessKey.Text);
+  db.SetParam(grp, 'VKUser', edVKUser.Text);
+  db.SetParam(grp, 'VKPasswd', edVKPasswd.Text);
+  db.SetParam(grp, 'VKAccessKey', edVKAccessKey.Text);
   db.SetParam('VKAppID', edVKAppID.Text);
 end;
 
@@ -168,12 +178,82 @@ begin
   Fasade.Run;
 end;
 
+procedure TMainFrm.cbParamGroupChange(Sender: TObject);
+begin
+  ParamGroupLoad;
+end;
+
+procedure TMainFrm.FillParamGroups;
+var
+  db: TMPdatabase;
+  arr: TNameValArr;
+  i: Integer;
+begin
+  db := TMPdatabase.GetInstance;
+  if not db.Connected then db.Connect;
+  if db.Connected then
+  begin
+    arr := db.GetParamGroups;
+    for i := 0 to Length(arr) - 1 do
+      cbParamGroup.Items.AddObject(
+        arr[i].Name,
+        TObject(arr[i].Value));
+  end;
+end;
+
 procedure TMainFrm.FormCreate(Sender: TObject);
 begin
   Fasade := nil;
   FViewCnt := 0;
 
+  FillParamGroups;
   btParamLoad.Click;
+end;
+
+function TMainFrm.GetParamGroup: integer;
+begin
+  Result := 1;
+  if cbParamGroup.ItemIndex < 0 then exit;
+
+  Result := Integer(cbParamGroup.Items.Objects[cbParamGroup.ItemIndex]);
+end;
+
+procedure TMainFrm.ParamGroupLoad;
+var
+  db: TMPdatabase;
+  grp: integer;
+begin
+  db := TMPdatabase.GetInstance;
+  if not db.Connected then db.Connect;
+  if db.Connected then
+  begin
+    grp := GetParamGroup;
+    if grp < 0 then exit;
+
+    edAppAuthKey.Text := db.GetParam(grp, 'AppAuthKey', '');
+    edVKUserID.Text := db.GetParam(grp, 'VKUserID', '0');
+    edVKUser.Text := db.GetParam(grp, 'VKUser', '');
+    edVKPasswd.Text := db.GetParam(grp, 'VKPasswd', '');
+    edVKAccessKey.Text := db.GetParam(grp, 'VKAccessKey', '');
+  end;
+end;
+
+procedure TMainFrm.SetParamGroup(grp: string);
+var
+  i,
+  g: integer;
+begin
+  if cbParamGroup.Items.Count <= 0 then exit;
+  cbParamGroup.ItemIndex := 0;
+
+  g := StrToIntDef(grp, -1);
+
+  for i := 0 to cbParamGroup.Items.Count - 1 do
+    if integer(cbParamGroup.Items.Objects[i]) = g then
+    begin
+      cbParamGroup.ItemIndex := i;
+      break;
+    end;
 end;
 
 procedure TMainFrm.Timer1Timer(Sender: TObject);

@@ -3,7 +3,7 @@ unit uTasks;
 interface
 uses
   SysUtils, Variants, Types, Classes, IOUtils, Forms, XMLIntf, XMLDoc, StrUtils,
-  Windows, DateUtils, ShellAPI,
+  Windows, DateUtils, ShellAPI, pFIBQuery,
   uMPserv, uVK, uDB, uGameItems, uLogger, uQueue, uFactories,
   uCalc, uDefs;
 
@@ -1223,6 +1223,7 @@ procedure TMTaskProcessGifts.IntExecute;
 var
   world: TMWorld;
 //  i: Integer;
+  FIBQuery: TpFIBQuery;
 begin
   inherited;
 
@@ -1232,6 +1233,12 @@ begin
   // send gifts
   if length(world.AvailGift) > 0 then
   begin
+    FIBQuery := FDB.MakeGifts;
+    while not FIBQuery.Eof do
+    begin
+
+      FIBQuery.Next;
+    end;
 
   end;
 
