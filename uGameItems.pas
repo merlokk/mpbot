@@ -799,7 +799,7 @@ begin
   room := GetRoom(RoomID);
   if room = nil then exit;
 
-  ResName := room.Header.GetRoomResource(ResName);
+  Result := room.Header.GetRoomResource(ResName);
 end;
 
 function TMWorld.GetSrvRevision6: string;

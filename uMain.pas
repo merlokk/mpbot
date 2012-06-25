@@ -55,6 +55,10 @@ type
     lbCurRoom: TLabel;
     Label15: TLabel;
     cbParamGroup: TComboBox;
+    Label16: TLabel;
+    lbTourists: TLabel;
+    Label17: TLabel;
+    lbNextWorkInt: TLabel;
     procedure btInitClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure btLoadDatrabaseClick(Sender: TObject);
@@ -277,7 +281,10 @@ begin
         lbMoney.Caption := IntToStr(world.LastHeader.Gold) + '/' +
            IntToStr(world.LastHeader.Coins);
         lbFuel.Caption := world.GetRoomResource(1, 'fuel');
+        lbTourists.Caption := world.GetRoomResource(2, 'tourists') + '/' +
+           world.GetRoomResource(2, 'tourist_capacity');
         lbCurRoom.Caption := IntToStr(TMPServer.GetInstance.CurrRoomID);
+        lbNextWorkInt.Caption := DateTimeToStr(Fasade.NextWorldUpdate);
 
         Fasade.PaintGraf(world, imGraph.Canvas);
       end
@@ -286,7 +293,9 @@ begin
         lbLevel.Caption := '---';
         lbMoney.Caption := '---';
         lbFuel.Caption := '---';
+        lbTourists.Caption := '---';
         lbCurRoom.Caption := '---';
+        lbNextWorkInt.Caption := '---';
       end;
     end;
 

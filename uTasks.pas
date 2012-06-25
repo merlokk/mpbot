@@ -50,6 +50,7 @@ type
     procedure SetExecutionIntervalSec(Seconds: integer; DeviationPrc: integer = 10);
     procedure SetExecuteOnce;
     procedure PlanNextExecution;
+    function GetNextExecution: TDateTime;
   public
     constructor Create; virtual;
 
@@ -62,6 +63,7 @@ type
 
     property TaskType: TMTaskType read FTaskType;
     property ExecCount: integer read FExecCount;
+    property NextExecution: TDateTime read GetNextExecution;
   end;
 
   TMTaskInitDB = class (TMTask)
@@ -161,6 +163,7 @@ type
     function AddTask(TaskType: TMTaskType): boolean;
     function ExecuteTask(TaskType: TMTaskType): boolean;
     function Execute: boolean;
+    function GetNextExecution(TaskType: TMTaskType): TDateTime;
   end;
 
 implementation
@@ -299,6 +302,17 @@ begin
   end;
 end;
 
+function TMTaskExecutor.GetNextExecution(TaskType: TMTaskType): TDateTime;
+var
+  task: TMTask;
+begin
+  Result := 0;
+  task := FTaskFactory.GetTask(TaskType);
+
+  if task <> nil then
+    Result := task.NextExecution;
+end;
+
 { TMTask }
 
 function TMTask.canExecute: boolean;
@@ -335,6 +349,18 @@ begin
 
     IntExecute;
   except
+  end;
+end;
+
+function TMTask.GetNextExecution: TDateTime;
+begin
+  Result := FNextExecution;
+  if FExecuteOnce then
+  begin
+    if FExecCount = 0 then
+      Result := Now
+    else
+      Result := 0;
   end;
 end;
 

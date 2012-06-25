@@ -24,10 +24,6 @@ object MainFrm: TMainFrm
     TabOrder = 0
     object tsEditor: TTabSheet
       Caption = 'Editor'
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object Label1: TLabel
         Left = 16
         Top = 59
@@ -278,10 +274,6 @@ object MainFrm: TMainFrm
     object tsLog: TTabSheet
       Caption = 'Log'
       ImageIndex = 1
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       DesignSize = (
         725
         568)
@@ -359,6 +351,34 @@ object MainFrm: TMainFrm
         Font.Style = []
         ParentFont = False
       end
+      object Label16: TLabel
+        Left = 171
+        Top = 38
+        Width = 46
+        Height = 16
+        Caption = 'Tourists'
+      end
+      object lbTourists: TLabel
+        Left = 222
+        Top = 38
+        Width = 15
+        Height = 16
+        Caption = '---'
+      end
+      object Label17: TLabel
+        Left = 290
+        Top = 16
+        Width = 57
+        Height = 16
+        Caption = 'Next work'
+      end
+      object lbNextWorkInt: TLabel
+        Left = 353
+        Top = 16
+        Width = 15
+        Height = 16
+        Caption = '---'
+      end
       object lbLog: TListBox
         Left = 3
         Top = 67
@@ -371,7 +391,7 @@ object MainFrm: TMainFrm
   end
   object Timer1: TTimer
     OnTimer = Timer1Timer
-    Left = 352
-    Top = 24
+    Left = 16
+    Top = 104
   end
 end

@@ -31,6 +31,7 @@ type
 
     Params: TFasadeParams;
     TaskExec: TMTaskExecutor;
+    function GetNextWorldUpdate: TDateTime;
   public
     constructor Create;
 
@@ -41,6 +42,8 @@ type
     procedure LoadSWF;
 
     procedure PaintGraf(world: TMWorld; cnv: TCanvas);
+
+    property NextWorldUpdate: TDateTime read GetNextWorldUpdate;
   end;
 
 implementation
@@ -67,6 +70,11 @@ begin
   finally
     FWorking := false;
   end;
+end;
+
+function TMPFasade.GetNextWorldUpdate: TDateTime;
+begin
+  Result := TaskExec.GetNextExecution(ttWorldUpdate);
 end;
 
 procedure TMPFasade.Init;
