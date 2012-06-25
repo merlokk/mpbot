@@ -5,7 +5,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, ComCtrls, ExtCtrls,
-  uFasade, uLogger, uDB, uGameItems, uMPServ;
+  uFasade, uLogger, uDB, uGameItems, uMPServ, uDefs;
 
 type
   TMainFrm = class(TForm)
@@ -276,7 +276,7 @@ begin
            IntToStr(world.LastHeader.Exp) + ')';
         lbMoney.Caption := IntToStr(world.LastHeader.Gold) + '/' +
            IntToStr(world.LastHeader.Coins);
-        lbFuel.Caption := IntToStr(world.LastHeader.Fuel);
+        lbFuel.Caption := world.GetRoomResource(1, 'fuel');
         lbCurRoom.Caption := IntToStr(TMPServer.GetInstance.CurrRoomID);
 
         Fasade.PaintGraf(world, imGraph.Canvas);

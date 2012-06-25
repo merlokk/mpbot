@@ -92,6 +92,7 @@ type
 
   TWorldHeaderHelper = record helper for TWorldHeader
     function ProcessResponseHeader(root: IXMLNode): boolean;
+    procedure ProcessRoomResources(data: string; root: IXMLNode);
   end;
 
   TMWorldHelper = class helper for TMWorld
@@ -798,6 +799,7 @@ begin
     WishListStr := VarToStr(root.Attributes['wish_list']);
     Population := VarToIntDef(root.Attributes['population'], 0);
     MaxPopulation := VarToIntDef(root.Attributes['max_population'], 0);
+    RoomsResources := VarToStr(root.Attributes['rooms_resources']);
     Fuel := VarToIntDef(root.Attributes['fuel'], 0);
     Gold := VarToIntDef(root.Attributes['gold'], 0);
     Coins := VarToIntDef(root.Attributes['coins'], 0);
@@ -814,6 +816,7 @@ begin
     RespectLevel := VarToIntDef(root.Attributes['respect_level'], 0);
 
     PopulationMultiplier :=  1 - tax * 7 / 1500;
+    ProcessRoomResources(RoomsResources, root);
 
     LastTick := GetTickCount;
     Result := true;
@@ -972,6 +975,26 @@ begin
 
     Result := true;
   except
+  end;
+end;
+
+procedure TWorldHeaderHelper.ProcessRoomResources(data: string; root: IXMLNode);
+var
+  sl: TStringList;
+  i: Integer;
+begin
+  sl := TStringList.Create;
+  try
+    sl.Delimiter := ',';
+    sl.DelimitedText := data;
+    SetLength(RoomResourcesArray, sl.Count);
+    for i := 0 to sl.Count - 1 do
+    begin
+      RoomResourcesArray[i].Name := sl[i];
+      RoomResourcesArray[i].Value := VarToStr(root.Attributes[sl[i]]);
+    end;
+  finally
+    sl.Free;
   end;
 end;
 

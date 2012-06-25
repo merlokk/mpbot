@@ -29,6 +29,7 @@ type
    FSessionID: string;
    FSessionLen,
    FSessionTick: cardinal;
+   FUserFirstName: string;
 
    FFriendList: array of VKFriendRec;
    FFriendListLoaded: boolean;
@@ -49,6 +50,7 @@ type
    constructor Create(AUserName, APassword: string);
 
    function VKGetProfiles(list: string): string;
+   function VKGetUserFirstName(uid: int64): string;
 
    function GetAppFriends: String;
    function GetFriends: String;
@@ -64,6 +66,7 @@ type
    property UserID: string read FUserID write FUserID;
    property UserName: string read FUserName;
    property GameFriendsCount: integer read FGameFriendsCount;
+   property UserFirstName: string read FUserFirstName;
  end;
 
 implementation
@@ -267,6 +270,7 @@ begin
     if Result then
     begin
       FSessionTick := GetTickCount;
+      FUserFirstName := VKGetUserFirstName(StrToIntDef(FUserID, 0));
       break;
     end;
   except
@@ -296,6 +300,7 @@ begin
   FUserID := '';
   FSessionID := '';
   FSessionTick := 0;
+  FUserFirstName := '';
 
   FGameFriends := '';
   FGameFriendsCount := 0;
@@ -422,6 +427,43 @@ begin
 
   sl.Free;
   AddLog('VK get profiles len=' + IntToStr(length(Result)), 5);
+end;
+
+function TVKAPI.VKGetUserFirstName(uid: int64): string;
+var
+  i: integer;
+  data: string;
+  doc: IXMLDocument;
+  root,
+  n: IXMLNode;
+begin
+  Result := '';
+  if uid <= 0 then exit;
+
+  data := VKGetProfiles(IntToStr(uid));
+  try
+    doc := LoadXMLData(data);
+    if doc = nil then exit;
+
+    root := doc.DocumentElement;
+    if root = nil then exit;
+
+    for i := 0 to root.ChildNodes.Count - 1 do
+      if root.ChildNodes[i].LocalName = 'user' then
+      begin
+        n := root.ChildNodes[i].ChildNodes.FindNode('uid');
+        if n = nil then continue;
+        if StrToIntDef(n.Text ,0) <> uid then continue;
+
+        n := root.ChildNodes[i].ChildNodes.FindNode('first_name');
+        if n <> nil then
+        begin
+          Result := Trim(Utf8ToAnsi(RawByteString(n.Text)));
+          exit;
+        end;
+      end;
+  except
+  end;
 end;
 
 procedure TVKAPI.LoadFriendList;

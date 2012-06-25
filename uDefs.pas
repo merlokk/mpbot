@@ -6,7 +6,8 @@ uses
 
 type
   TFieldAction = (faNone, faClean, faPick, faPut, faTick,
-    faRemoveWishList, faAddWishList, faHelp, faLast);
+    faRemoveWishList, faAddWishList, faHelp, faSendGift, faMassSendGift,
+    faLast);
 
 const
   STATE_BUILD = 1;
@@ -31,15 +32,28 @@ const
   FA_STR: array [faNone..faLast] of string =
     ('', 'clean', 'pick', 'put', 'tick',
      'remove_from_wish_list', 'add_to_wish_list', 'help',
+     'send_gift', 'mass_send_gift',
      '');
   FA_STR_STAT: array [faNone..faLast] of string =
     ('', 'cln', 'pick', 'put', 'tick',
-     'remwl', 'addwl', 'hlp',
+     'remwl', 'addwl', 'hlp', 'gift', 'mgift',
      '');
 
   GUARD_TIME = 60 / SecsPerDay; // 60 sec
 
 type
+  TNameValRec = record
+    Name: string;
+    Value: integer;
+  end;
+  TNameValArr = array of TNameValRec;
+
+  TNameValSRec = record
+    Name: string;
+    Value: string;
+  end;
+  TNameValSArr = array of TNameValSRec;
+
   TFieldGraf = array [0..12] of integer;
 
   WantListRec = packed record
@@ -53,11 +67,11 @@ type
     affected_items: string;
   end;
 
-  SendGiftRec = packed record
-    id: Cardinal;
-    globalid: cardinal;
-    to_user: int64;
-    sent: boolean;
+  TSendGiftRec = packed record
+    ID: int64;
+    GameItemID: integer;
+    UserID: int64;
+    procedure Clear;
   end;
 
   TFriendRec = packed record
@@ -177,6 +191,15 @@ begin
   HaveGift := true;
   HelpPointsCnt := 0;
   NextVisitDT := Now + 10;
+end;
+
+{ TSendGiftRec }
+
+procedure TSendGiftRec.Clear;
+begin
+  ID := 0;
+  GameItemID := 0;
+  UserID := 0;
 end;
 
 initialization

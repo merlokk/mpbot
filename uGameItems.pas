@@ -100,6 +100,7 @@ type
     ID: Cardinal;
     Qty: integer;
     FromUser: cardinal;
+    Score: Extended;
 
     GameItem: TMGameItem;
 
@@ -201,6 +202,7 @@ type
     NextTick: cardinal;
     RoomInformation,
     WishListStr: String;
+    RoomsResources: string;
     Tax: integer;
     PopulationMultiplier: extended;
     Population,
@@ -218,6 +220,7 @@ type
     Level: integer;
     OwnerID: int64;
     Visitors: String;
+    RoomResourcesArray: TNameValSArr;
 
     LastTick: cardinal;
 
@@ -225,6 +228,7 @@ type
     function GetMaxPopulation: int64;
     function GetPopulation: int64;
     function GetFreePopulation: int64;
+    function GetRoomResource(name: string): string;
   end;
 
   TMRoom = class
@@ -297,7 +301,11 @@ type
     function GetRoom(RoomID: integer): TMRoom;
     function AddRoom(RoomID: integer): TMRoom;
     function GetRoomCount: integer;
+    function GetRoomResource(RoomID: integer; ResName: string): string;
 
+    function MakeGift(gift: TSendGiftRec): boolean;
+    function CanGift(uid: int64): boolean;
+    function GetNextGift(var gift: TSendGiftRec): boolean;
     function GetAvailGiftCount(GameItemID: cardinal): integer;
     function GetBarnCount(GameItemID: cardinal): integer;
 
@@ -606,6 +614,22 @@ begin
   end;
 end;
 
+function TMWorld.CanGift(uid: int64): boolean;
+var
+ i: integer;
+begin
+  Result := false;
+  if not valid then exit;
+  if uid = OwnerID then exit;
+
+  for i := 0 to length(Friends) - 1 do
+    if Friends[i].ID = uid then
+    begin
+      Result := not Friends[i].HaveGift;
+      break;
+    end;
+end;
+
 function TMWorld.CheckRoomInformation(roominfo: string): boolean;
 var
  obj,
@@ -710,6 +734,28 @@ begin
       Result := Result + Barn[i].Qty;
 end;
 
+function TMWorld.GetNextGift(var gift: TSendGiftRec): boolean;
+var
+ i: integer;
+ q: extended;
+begin
+  Result := false;
+  if not valid then exit;
+
+  q := 1000;
+  gift.GameItemID := 0;
+  gift.ID := 0;
+
+  for i := 0 to length(AvailGift) - 1 do
+    if (AvailGift[i].qty > 0) and
+       (AvailGift[i].Score < q) then
+    begin
+      gift.GameItemID := AvailGift[i].GameItemID;
+      gift.ID := AvailGift[i].ID;
+      q := AvailGift[i].Score;
+    end;
+end;
+
 class function TMWorld.GetInstance: TMWorld;
 begin
   if CInstance = nil then CInstance := TMWorld.Create;
@@ -745,6 +791,17 @@ begin
   Result := length(FRooms);
 end;
 
+function TMWorld.GetRoomResource(RoomID: integer; ResName: string): string;
+var
+  room: TMRoom;
+begin
+  Result := '';
+  room := GetRoom(RoomID);
+  if room = nil then exit;
+
+  ResName := room.Header.GetRoomResource(ResName);
+end;
+
 function TMWorld.GetSrvRevision6: string;
 begin
   Result := Copy(FSrvRevision, 1, 6);
@@ -755,6 +812,38 @@ begin
   Result := '';
   if length(FSWFRevision) < 19 then exit;
   Result := Copy(FSWFRevision, length(FSWFRevision) - 18, 19);
+end;
+
+function TMWorld.MakeGift(gift: TSendGiftRec): boolean;
+var
+ i,
+ j,
+ frid: integer;
+begin
+  Result := false;
+  if not valid then exit;
+
+  frid := -1;
+  for i := 0 to length(friends) - 1 do
+    if friends[i].id = gift.UserID then
+    begin
+      if Friends[i].HaveGift then exit;
+      frid := i;
+      break;
+    end;
+
+  if frid < 0 then exit;
+
+  for j := 0 to length(AvailGift) - 1 do
+    if (AvailGift[j].ID = gift.ID) and
+       (AvailGift[j].Qty > 0) then
+    begin
+      AvailGift[j].Qty := AvailGift[j].Qty - 1;
+      Friends[frid].HaveGift := true;
+
+      Result := true;
+      break;
+    end;
 end;
 
 function TMWorld.StrGiftStat: String;
@@ -795,6 +884,7 @@ begin
   NextTick := 0;
   RoomInformation := '';
   WishListStr := '';
+  RoomsResources := '';
   Tax := 0;
   PopulationMultiplier := 1;
   population := 0;
@@ -812,6 +902,7 @@ begin
   Level := 0;
   OwnerID := 0;
   Visitors := '';
+  SetLength(RoomResourcesArray, 0);
 
   LastTick := 0;
 end;
@@ -829,6 +920,19 @@ end;
 function TWorldHeader.GetPopulation: int64;
 begin
   Result := int64(Population);
+end;
+
+function TWorldHeader.GetRoomResource(name: string): string;
+var
+  i: Integer;
+begin
+  Result := '';
+  for i := 0 to length(RoomResourcesArray) - 1 do
+    if RoomResourcesArray[i].Name = name then
+    begin
+      Result := RoomResourcesArray[i].Value;
+      break;
+    end;
 end;
 
 { TMRoom }
@@ -895,7 +999,6 @@ end;
 function TMRoom.FieldGrafFill(var gr: TFieldGraf): boolean;
 var
   i: Integer;
-  room: TMRoom;
   cdt: TDateTime;
 begin
   Result := false;
@@ -1036,6 +1139,7 @@ begin
   ID := 0;
   Qty := 0;
   FromUser := 0;
+  Score := 0;
 
   GameItem := nil;
 end;

@@ -118,6 +118,10 @@ type
   end;
 
   TMTaskProcessGifts = class (TMTask)
+  private
+    {TODO: перейти на faMassSendGift}
+    procedure QueueAddGift(gift: TSendGiftRec);
+  public
     constructor Create; override;
     procedure IntExecute; override;
   end;
@@ -709,6 +713,8 @@ begin
 
   // update gifts
   FDB.RecvdGiftsUpdate(world.RecvdGift);
+  FDB.AvailGiftsUpdate(world.AvailGift);
+  FDB.FillGiftsScore(world.AvailGift);
   FDB.CalcRewardPoints(world.OwnerID);
 
   // add statistic
@@ -1190,6 +1196,7 @@ begin
 
   // calc commands
   FQu.Clear;
+  FQu.CurrentXP := world.LastHeader.Exp;
   //  FMPServ.CurrRoomID ---- небольшое отклонение от нормального клиента
   for i := 0 to length(FCurrentWl) - 1 do
     if not inList(FNeededWl, FCurrentWl[i]) then
@@ -1221,84 +1228,88 @@ end;
 
 procedure TMTaskProcessGifts.IntExecute;
 var
+  i: integer;
   world: TMWorld;
-//  i: Integer;
   FIBQuery: TpFIBQuery;
+  gift: TSendGiftRec;
+  PckCount: integer;
 begin
   inherited;
 
   world := TMWorld.GetInstance;
   if (world = nil) or (not world.Valid) then exit;
 
+  PckCount := 40 + random(20);
+  FQu.Clear;
+  FQu.CurrentXP := world.LastHeader.Exp;
+
   // send gifts
   if length(world.AvailGift) > 0 then
-  begin
-    FIBQuery := FDB.MakeGifts;
-    while not FIBQuery.Eof do
+    for i := 1 to 5 do
     begin
-
-      FIBQuery.Next;
-    end;
-
-  end;
-
-{procedure TMPUserGifts.Calc(st: MPstat);
-var
- FIBQuery: TpFIBQuery;
- sg: SendGiftRec;
-begin
-  FIBQuery := db.MakeGifts;
-  while not FIBQuery.Eof do
-  begin
-    sg.globalid := FIBQuery.FieldByName('GIFT_ID').AsInteger;
-    sg.id := FIBQuery.FieldByName('gift_un_id').AsInteger;
-    sg.to_user := FIBQuery.FieldByName('ID').AsInt64;
-    sg.sent := false;
-
-    if st.MakeGift(sg) then
-    begin
-      SetLength(FSendGifts, length(FSendGifts) + 1);
-      FSendGifts[length(FSendGifts) - 1] := sg;
-    end;
-
-    FIBQuery.Next;
-  end;
-  FIBQuery.Close;
-
-  FIBQuery := db.GetFriendsList;
-  while not FIBQuery.Eof do
-  begin
-    sg.id := 0;
-    sg.to_user := FIBQuery.FieldByName('ID').AsInt64;
-    sg.sent := false;
-
-    if st.CanGift(sg.to_user) then
-    begin
-      st.GetCoolGift(sg);
-      if st.MakeGift(sg) then
+      // wishlist
+      FIBQuery := FDB.MakeGifts;
+      while (not FIBQuery.Eof) and (FQu.Count < PckCount) do
       begin
-        SetLength(FSendGifts, length(FSendGifts) + 1);
-        FSendGifts[length(FSendGifts) - 1] := sg;
+        gift.Clear;
+        gift.ID := FIBQuery.FieldByName('gift_un_id').AsInteger;
+        gift.GameItemID := FIBQuery.FieldByName('game_items_id').AsInteger;
+        gift.UserID := FIBQuery.FieldByName('ID').AsInt64;
+
+        if world.MakeGift(gift) then
+        begin
+          QueueAddGift(gift);
+          FDB.SubtractReward(gift);
+          if FQu.Count >= PckCount then break;
+        end;
+
+        FIBQuery.Next;
       end;
+      FIBQuery.Close;
+
+      // send other gifts. max level for random gifts - 100 (dont spam with gifts)
+      FIBQuery := FDB.GetGiftFriendsList(100);
+      while (not FIBQuery.Eof) and (FQu.Count < PckCount) do
+      begin
+        gift.Clear;
+        gift.UserID := FIBQuery.FieldByName('ID').AsInt64;
+
+        if world.CanGift(gift.UserID) then
+        begin
+          world.GetNextGift(gift);
+
+          if world.MakeGift(gift) then
+          begin
+            QueueAddGift(gift);
+            FDB.SubtractReward(gift, 0.5);    //  тут 2 раза вычисляется стоимость гифта - это может быть медленно!
+            if FQu.Count >= PckCount then break;
+          end;
+        end;
+
+        FIBQuery.Next;
+      end;
+      FIBQuery.Close;
+
+      FDB.Commit;
+
+      if FQu.Count > 0 then
+      begin
+        FMPServ.CheckAndPerform(world, FQu);
+        FQu.Clear;
+      end
+      else
+       break;  // nothing to send
     end;
-
-    FIBQuery.Next;
-  end;
-  FIBQuery.Close;
 end;
 
-procedure TMPUserGifts.CalcMinusReward;
+procedure TMTaskProcessGifts.QueueAddGift(gift: TSendGiftRec);
 var
- i: integer;
+  elm: TActionQueueElm;
 begin
-  for i := 0 to length(FSendGifts) - 1 do
-    if FSendGifts[i].sent then
-      db.SubtractReward(FSendGifts[i]);
-  db.Commit;
-end;
-}
-
-
+  elm := FQu.Add(FMPServ.CurrRoomID, gift.ID, faSendGift);
+  elm.AddAttr('second_user_id', IntToStr(gift.UserID));
+  elm.AddAttr('recipient_name', FVK.GetFriendFirstName(gift.UserID));
+  elm.AddAttr('sender_name', FVK.UserFirstName);
 end;
 
 { TMTaskFriendHelp }

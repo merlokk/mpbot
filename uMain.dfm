@@ -24,6 +24,10 @@ object MainFrm: TMainFrm
     TabOrder = 0
     object tsEditor: TTabSheet
       Caption = 'Editor'
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object Label1: TLabel
         Left = 16
         Top = 59
@@ -274,6 +278,10 @@ object MainFrm: TMainFrm
     object tsLog: TTabSheet
       Caption = 'Log'
       ImageIndex = 1
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       DesignSize = (
         725
         568)

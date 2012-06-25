@@ -116,10 +116,10 @@ var
  maxItems,
  delta,
  tall: integer;
- data: array[0..1] of TFieldGraf;
+ data: array[0..2] of TFieldGraf;
  room: TMRoom;
 begin
-  for i := 0 to 1 do
+  for i := 0 to 2 do
   begin
     room := world.GetRoom(i);
     if room = nil then continue;
@@ -137,6 +137,7 @@ begin
   begin
     maxItems := Max(maxItems, data[0][i]);
     maxItems := Max(maxItems, data[1][i]);
+    maxItems := Max(maxItems, data[2][i]);
   end;
 
   if maxItems = 0 then exit;
@@ -169,6 +170,13 @@ begin
         i * delta + 4 + ((delta div 3)*2 - 1),
         tall));
 
+    cnv.Brush.Color := clNavy;
+    if data[2][i] > 0 then
+      cnv.FillRect(Rect(
+        i * delta + 4 + (delta div 3)*2,
+        tall - max(Trunc(data[2][i] / maxItems * tall), 1),
+        i * delta + 4 + ((delta div 3)*3 - 1),
+        tall));
   end;
 
 end;

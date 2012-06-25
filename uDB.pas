@@ -8,25 +8,19 @@ uses
   uGameItems;
 
 type
-  TNameValRec = record
-    Name: string;
-    Value: integer;
-  end;
-  TNameValArr = array of TNameValRec;
-
   TMPdatabase = class
   protected
     class var FInstance: TMPdatabase;
     class constructor ClassCreate;
   private
     FConnected: boolean;
+    DBFloatFormat: TFormatSettings;
 
     FIBDatabase: TpFIBDatabase;
     FIBQuery: TpFIBQuery;
     FIBQueryCurs: TpFIBQuery;
     FIBTransaction: TpFIBTransaction;
 
-//    FWantList: array of WantListRec;
     FWantListLoaded: boolean;
 //    FRewardList: array of WantListRec;
     FRewardLoaded: boolean;
@@ -39,7 +33,6 @@ type
     FFieldDeny: array of string;
 
     function UpdateExecContractList: boolean;
-//    function FillWantList: boolean;
 //    function FillRewardList: boolean;
     function UpdateFieldDenyList: boolean;
   public
@@ -61,7 +54,7 @@ type
     function GetParamGroups: TNameValArr;
 
     function GetRewardPoints(userid: int64): Extended;
-//    procedure SubtractReward(gift: SendGiftRec);
+    procedure SubtractReward(gift: TSendGiftRec; SubKoef: extended = 1);
 
     function FriendsDisable: boolean;
     function FriendUpdate(friend: TFriendRec): boolean;
@@ -76,17 +69,17 @@ type
     function RecvdGiftsDisable: boolean;
     function RecvdGiftUpdate(gift: TGiftRec): boolean;
     function RecvdGiftsUpdate(gifts: TGiftRecs): boolean;
-//    function GiftsAvailDisable: boolean;
-//    function GiftsAvailUpdate(gift: GiftRec): boolean;
-{
-    function GetGiftScore(gift_id: cardinal): extended;
-    function QueryWantList: boolean;
-}
+    function AvailGiftsDisable: boolean;
+    function AvailGiftUpdate(gift: TGiftRec): boolean;
+    function AvailGiftsUpdate(gifts: TGiftRecs): boolean;
+    function GetGiftReward(GameItemID: int64): extended;
+    function FillGiftsScore(var gifts: TGiftRecs): boolean;
+
     function GetPriorityBuildList: TStringDynArray;
 
     function MakeGifts: TpFIBQuery;
-{    function GetFriendsList: TpFIBQuery;
-}
+    function GetGiftFriendsList(MaxLevel: integer): TpFIBQuery;
+
     function CalcRewardPoints(OwnerUserID: int64): boolean;
 
     function GetGameItemId(name: String): cardinal;
@@ -268,6 +261,9 @@ constructor TMPdatabase.Create;
 begin
   inherited Create;
 
+  DBFloatFormat := TFormatSettings.Create;
+  DBFloatFormat.DecimalSeparator := '.';
+
   SetLength(FExecContractList, 0);
   SetLength(FGameFriend, 0);
 
@@ -334,34 +330,6 @@ begin
   end;
 end;
 
-function TMPdatabase.FillWantList: boolean;
-begin
-  Result := false;
-  try
-    FIBQuery.Close;
-    FIBQuery.SQL.Text :=
-      'select gift_id, count(gift_id) cnt from whishlist group by gift_id having count(gift_id) > 1 order by cnt desc';
-    FIBQuery.ExecQuery;
-
-    SetLength(FWantList, 0);
-
-    while not FIBQuery.Eof do
-    begin
-      SetLength(FWantList, length(FWantList) + 1);
-      FWantList[length(FWantList) - 1].GiftID :=
-        FIBQuery.FieldByName('gift_id').AsInt64;
-      FWantList[length(FWantList) - 1].Score :=
-        FIBQuery.FieldByName('cnt').AsInteger;
-
-      FIBQuery.Next;
-    end;
-    FIBQuery.Close;
-
-    FWantListLoaded := true;
-    Result := true;
-  except
-  end;
-end;
  }
 
 function TMPdatabase.FriendsDisable: boolean;
@@ -444,23 +412,25 @@ begin
 
   Result := item.XP;
 end;
-
-function TMPdatabase.GetFriendsList: TpFIBQuery;
+       }
+function TMPdatabase.GetGiftFriendsList(MaxLevel: integer): TpFIBQuery;
 begin
   Result := nil;
   if not Connected then exit;
 
   try
+    //  рассыпаем ненужные подарки начиная с мелких и в игре
     FIBQueryCurs.SQL.Text :=
       'select fr.* ' +
       'from friends fr ' +
-      'order by ingame desc, fr.reward_points desc, fr.level desc';
+      'where level <=' + IntToStr(MaxLevel) + ' ' +
+      'order by ingame desc, fr.reward_points, fr.level';
     FIBQueryCurs.ExecQuery;
     Result := FIBQueryCurs;
   except
   end;
 end;
-  }
+
 function TMPdatabase.GetGameItem(name: string): TMGameItem;
 begin
   Result := GetGameItem(GetGameItemId(name));
@@ -476,21 +446,6 @@ begin
   Result := FIBQuery.ParamValue('id');
 end;
    {
-function TMPdatabase.GetGiftScore(gift_id: cardinal): extended;
-var
- i: integer;
-begin
-  Result := -1;
-  //  if gift in my wanted list ==> reward -10
-
-  // if in wanted list all the friends ==> maximize
-  for i := 0 to length(FWantList) - 1 do
-    if FWantList[i].GiftID = gift_id then
-    begin
-      Result := max(Result, FWantList[i].Score);
-      break;
-    end;
-end;
 
 function TMPdatabase.GetGroupedAppFriends(var GroupNum: integer; GroupCount: integer): string;
 var
@@ -684,6 +639,25 @@ begin
   Result := FIBQuery.ParamValue('name');
 end;
 
+function TMPdatabase.GetGiftReward(GameItemID: int64): extended;
+begin
+  Result := 0;
+  if not Connected then exit;
+
+  FIBQuery.SQL.Text := 'execute procedure GIFT_REWARD(' + IntToStr(GameItemID) + ')';
+  FIBQuery.ExecQuery;
+  Result := FIBQuery.ParamValue('reward');
+end;
+
+function TMPdatabase.FillGiftsScore(var gifts: TGiftRecs): boolean;
+var
+  i: Integer;
+begin
+  for i := 0 to length(gifts) - 1 do
+    gifts[i].Score := GetGiftReward(gifts[i].GameItemID);
+  Result := true;
+end;
+
 function TMPdatabase.GetPriorityBuildList: TStringDynArray;
 begin
   SetLength(Result, 0);
@@ -746,8 +720,8 @@ begin
   FIBQuery.ExecQuery;
   Result := FIBQuery.ParamValue('cnt');
 end;
- {
-function TMPdatabase.GiftsAvailDisable: boolean;
+
+function TMPdatabase.AvailGiftsDisable: boolean;
 begin
   Result := false;
   if not Connected then exit;
@@ -762,23 +736,40 @@ begin
   end;
 end;
 
-function TMPdatabase.GiftsAvailUpdate(gift: GiftRec): boolean;
+function TMPdatabase.AvailGiftUpdate(gift: TGiftRec): boolean;
 begin
   Result := false;
   if not Connected then exit;
 
   try
     FIBQuery.SQL.Text :=
-      'execute procedure UPDATE_GIFTS_AVAIL(' +
-      IntToStr(gift.id) + ', ' +
-      IntToStr(gift.globalid) + ', ' +
-      IntToStr(gift.qty) + ')';
+      'update or insert into GIFTS_AVAIL (id, game_items_id, qty) values(' +
+      IntToStr(gift.ID) + ', ' +
+      IntToStr(gift.GameItemID) + ', ' +
+      IntToStr(gift.Qty) + ') matching (id)';
     FIBQuery.ExecQuery;
 
     Result := true;
   except
   end;
-end;           }
+end;
+
+function TMPdatabase.AvailGiftsUpdate(gifts: TGiftRecs): boolean;
+var
+  i: Integer;
+begin
+  Result := true;
+
+  AvailGiftsDisable;
+  for i := 0 to length(gifts) - 1 do
+  try
+    Result := Result and AvailGiftUpdate(gifts[i]);
+  except
+    break;
+  end;
+
+  if FIBTransaction.Active then FIBTransaction.Commit;
+end;
 
 function TMPdatabase.RecvdGiftsDisable: boolean;
 begin
@@ -879,32 +870,24 @@ function TMPdatabase.MakeGifts: TpFIBQuery;
 begin
   Result := nil;
   if not Connected then exit;
-   {
+
   try
     FIBQueryCurs.SQL.Text :=
-      'select sq.*, gr.rewardpoints ' +
-      'from ' +
-      '(select fr.*, gi.name, wi.gift_id, ga.id as gift_un_id ' +
-      'from friends fr,whishlist wi, gifts_avail ga, gifts gi ' +
+      'select fr.*, gi.name, wi.game_items_id, ga.id as gift_un_id ' +
+      'from friends fr, wishlist wi, gifts_avail ga, game_items gi ' +
       'where ' +
       '(fr.ingame = 1) and ' +
-      '(fr.id = wi.user_id) and ' +
-      '(wi.gift_id = gi.gift_id) and ' +
-      '(wi.gift_id = ga.class_id) ' +
-      'order by fr.reward_points desc, fr.level desc) sq ' +
-      'left join giftrewards gr on sq.gift_id = gr.gift_id';
+      '(fr.id = wi.friends_id) and ' +
+      '(wi.game_items_id = gi.id) and ' +
+      '(wi.game_items_id = ga.game_items_id) ' +
+      'order by fr.reward_points desc, fr.level desc ';
+
     FIBQueryCurs.ExecQuery;
     Result := FIBQueryCurs;
   except
-  end;   }
-
+  end;
 end;
 {
-function TMPdatabase.QueryWantList: boolean;
-begin
-  if not FWantListLoaded then FillWantList;
-  Result := FWantListLoaded;
-end;
 
 procedure TMPdatabase.SetFriendNextHelp(FriendID: int64; Date: TDateTime);
 begin
@@ -915,44 +898,26 @@ begin
   FIBQuery.ExecQuery;
   Commit;
 end;
-
-procedure TMPdatabase.SubtractReward(gift: SendGiftRec);
+}
+procedure TMPdatabase.SubtractReward(gift: TSendGiftRec; SubKoef: extended);
 var
- i: integer;
  rew: extended;
 begin
   if not Connected then exit;
-  if not FRewardLoaded then FillRewardList;
 
-  rew := 0;
-  for i := 0 to length(FRewardList) - 1 do
-    if FRewardList[i].GiftID = gift.globalid then
-    begin
-      rew := FRewardList[i].Score;
-      break;
-    end;
-
-  if Round(rew * 5) = 0 then
-   for i := 0 to length(FWantList) - 1 do
-    if FWantList[i].GiftID = gift.globalid then
-    begin
-      rew := FWantList[i].Score / 15;
-      if rew < 1 then rew := 1;
-      break;
-    end;
-
-  if Round(rew * 5) <> 0 then
   try
+    rew := GetGiftReward(gift.GameItemID) * SubKoef;
     FIBQuery.SQL.Text :=
-      'execute procedure SUB_FRIEND_REWARD_POINTS(' +
-        IntToStr(gift.to_user) + ',' +
-        FormatFloat('0.00', rew, FFloatFormat) + ')';
+      'update FRIENDS set ' +
+      'REWARD_POINTS = REWARD_POINTS - ' + FormatFloat('0.00', rew, DBFloatFormat) + ',' +
+      'HINT= ''subtracted=' + FormatFloat('0.00', rew, DBFloatFormat) + ' gi=' + IntToStr(gift.GameItemID) + '''' +
+      ' where ID=' + IntToStr(gift.UserID);
     FIBQuery.ExecQuery;
   except
   end;
 end;
 
-}
+
 function TMPdatabase.UpdateExecContractList: boolean;
 begin
   Result := false;
