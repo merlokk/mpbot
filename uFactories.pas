@@ -139,6 +139,7 @@ function TFieldsFactory.GetField(name: string): TMField;
 var
   item: TMGameItem;
 begin
+  Result := nil;
   item := FIFactory.GetGameItem(name);
 
   if item = nil then
@@ -149,7 +150,14 @@ begin
 
   case item.ItemType of
     gitPlace: Result := TMFieldPlace.Create;
-    gitFactory: Result := TMFieldFactory.Create;
+    gitFactory:
+      begin
+        if name = 'central_station' then
+          Result := TMFieldCentralStation.Create;
+
+        if Result = nil then
+          Result := TMFieldFactory.Create;
+      end;
     gitBuilding: Result := TMFieldBuilding.Create;
     gitHouse: Result := TMFieldHouse.Create;
   else
