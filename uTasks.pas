@@ -892,6 +892,7 @@ begin
     begin
       FMPServ.CheckAndPerform(world, FQu);
 
+      AddLog('(' + FQu.GetItemsLog + ')', 9);
       FQu.Clear;
       // if we put ticks to server - end of the task!!!
       exit;
@@ -914,6 +915,7 @@ begin
     begin
       FMPServ.CheckAndPerform(world, FQu);
 
+      AddLog('(' + FQu.GetItemsLog + ')', 9);
       FQu.Clear;
       // if we put work to server - end of the task!!!
       exit;

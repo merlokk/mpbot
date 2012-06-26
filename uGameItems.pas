@@ -1460,8 +1460,10 @@ begin
     begin
       elm := Qu.Add(Room.ID, ID, Name, faPick,
         GameItem.GetAttr('extra_exp').AsInteger);
+
+      //  house affected from excavation
       aff := CalcHouseAffected;
-      // TODO: calc affected
+
       ippl := GameItem.GetAttr('population_increase').AsInteger;
       if aff <> '' then
       begin

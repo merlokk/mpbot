@@ -51,6 +51,7 @@ type
      procedure FillFormData(vHttpRequest: TclHttpRequest);
 
      function StrStat: string;
+     function GetItemsLog: string;
   end;
 
 implementation
@@ -153,6 +154,43 @@ begin
   if not Assigned(FInstance) then
     FInstance := TActionQueue.Create;
   Result := FInstance;
+end;
+
+function TActionQueue.GetItemsLog: string;
+var
+  sl: TStringList;
+  indx,
+  i: Integer;
+begin
+  Result := '';
+  sl := TStringList.Create;
+  try
+    for i := 0 to length(FQuElm) - 1 do
+    begin
+      indx := sl.IndexOf(FQuElm[i].LogName);
+      if indx < 0 then
+        sl.AddObject(FQuElm[i].LogName, TObject(0))
+      else
+        sl.Objects[indx] := TObject(integer(sl.Objects[indx]) + 1);
+    end;
+
+    if sl.Count < 13 then
+    begin
+      for i := 0 to sl.Count - 1 do
+        if integer(sl.Objects[i]) < 1 then
+          Result := Result + sl[i] + ','
+        else
+          Result := Result + sl[i] + ':' + IntToStr(integer(sl.Objects[i])) + ',';
+    end
+    else
+    begin
+      Result := 'items types: ' + IntToStr(sl.Count);
+    end;
+
+    Result := Copy(Result, 1, length(Result) - 1);
+  finally
+    sl.Free;
+  end;
 end;
 
 function TActionQueue.StrStat: string;
