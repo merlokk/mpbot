@@ -16,6 +16,7 @@ type
   private
   public
     ID: int64;
+    LogName: string;
     RoomID: integer;
     AType: TFieldAction;
     ActionDT: TDateTime;
@@ -45,7 +46,7 @@ type
      destructor Destroy; override;
 
      procedure Clear;
-     function Add(ARoomID: integer; AID: int64; AType: TFieldAction; ADeltaXP: integer = 0): TActionQueueElm;
+     function Add(ARoomID: integer; AID: int64; ALogName: string; AType: TFieldAction; ADeltaXP: integer = 0): TActionQueueElm;
      function Count: integer;
      procedure FillFormData(vHttpRequest: TclHttpRequest);
 
@@ -56,11 +57,12 @@ implementation
 
 { TActionQueue }
 
-function TActionQueue.Add(ARoomID: integer; AID: int64; AType: TFieldAction; ADeltaXP: integer): TActionQueueElm;
+function TActionQueue.Add(ARoomID: integer; AID: int64; ALogName: string; AType: TFieldAction; ADeltaXP: integer): TActionQueueElm;
 begin
   Result := TActionQueueElm.Create;
   Result.Clear;
   Result.ID := AID;
+  Result.LogName := ALogName;
   Result.RoomID := ARoomID;
   Result.AType := AType;
   Result.DeltaXP := ADeltaXP;
@@ -191,6 +193,7 @@ end;
 procedure TActionQueueElm.Clear;
 begin
   ID := 0;
+  LogName := '';
   RoomID := 0;
   AType := faNone;
   ActionDT := 0;

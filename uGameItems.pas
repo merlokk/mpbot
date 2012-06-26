@@ -65,6 +65,9 @@ type
     function GetcanPut: boolean;
     function GetisBuildSite: boolean;
     function GetMaterialQty: string;
+    function GetHeight: integer;
+    function GetRadius: integer;
+    function GetWidth: integer;
   public
     constructor Create;
     procedure Clear;
@@ -90,6 +93,9 @@ type
     property isBuilding: boolean read GetIsBuilding;
     property isHouse: boolean read GetIsHouse;
     property MaterialQty: string read GetMaterialQty;
+    property Height: integer read GetHeight;
+    property Width: integer read GetWidth;
+    property Radius: integer read GetRadius;
   end;
 
   TGiftRec = packed record
@@ -146,6 +152,7 @@ type
 
     function GetProcessEndDT: TDateTime;
     function GetActionDT(canTick, canWork: boolean): TDateTime; virtual;
+    function inAreaOf(it: TMField): boolean;
 
     property Serial: cardinal read FSerial write FSerial;
     property GameItem: TMGameItem read FGameItem write FGameItem;
@@ -182,6 +189,8 @@ type
   end;
 
   TMFieldHouse = class (TMField)
+  private
+    function CalcHouseAffected: string;
   public
     function GetActionDT(canTick, canWork: boolean): TDateTime; override;
     procedure ChangeState(NewState: integer);
@@ -416,6 +425,11 @@ begin
   Result := GetAttr('put').AsBoolean;
 end;
 
+function TMGameItem.GetHeight: integer;
+begin
+  Result := GetAttr('height').AsInteger;
+end;
+
 function TMGameItem.GetIsBuilding: boolean;
 begin
   Result :=
@@ -472,6 +486,16 @@ end;
 function TMGameItem.GetMaterialQty: string;
 begin
   Result := GetAttr('materials_quantity_obj').AsString;
+end;
+
+function TMGameItem.GetRadius: integer;
+begin
+  Result := GetAttr('radius').AsInteger;
+end;
+
+function TMGameItem.GetWidth: integer;
+begin
+  Result := GetAttr('width').AsInteger;
 end;
 
 function TMGameItem.GetAttrIndx(id: integer): integer;
@@ -1232,6 +1256,53 @@ begin
     Result := 0;
 end;
 
+function FieldInArea(itMain, itSlave: TMField): boolean;
+var
+  hMain,
+  wMain,
+  hSlave,
+  wSlave,
+  rMain: integer;
+begin
+  Result := false;
+  if (itMain.GameItem = nil) or (itSlave.GameItem = nil) then exit;
+
+  if not itMain.Rotated then
+  begin
+    hMain := itMain.GameItem.Height;
+    wMain := itMain.GameItem.Width;
+  end
+  else
+  begin
+    hMain := itMain.GameItem.Width;
+    wMain := itMain.GameItem.Height;
+  end;
+
+  if not itSlave.Rotated then
+  begin
+    hSlave := itSlave.GameItem.Height;
+    wSlave := itSlave.GameItem.Width;
+  end
+  else
+  begin
+    hSlave := itSlave.GameItem.Width;
+    wSlave := itSlave.GameItem.Height;
+  end;
+
+  rMain := itMain.GameItem.Radius;
+
+  Result :=
+    (itSlave.x >= itMain.x - rMain) and
+    (itSlave.x + (wSlave - 1) <= itMain.x + rMain + (wMain - 1)) and
+    (itSlave.y >= itMain.y - rMain) and
+    (itSlave.y + (hSlave - 1) <= itMain.y + rMain + (hMain - 1));
+end;
+
+function TMField.inAreaOf(it: TMField): boolean;
+begin
+  Result := FieldInArea(it, Self);
+end;
+
 procedure TMField.SetRoom(const Value: TMRoom);
 begin
   FRoom := Value;
@@ -1272,7 +1343,7 @@ begin
        (GetProcessEndDT > Now - 10)
     then
     begin
-      elm := Qu.Add(Room.ID, ID, faTick);
+      elm := Qu.Add(Room.ID, ID, Name, faTick);
       elm.ActionDT := GetProcessEndDT;
 
       ChangeState(STATE_DIRTY);
@@ -1286,7 +1357,7 @@ begin
        (GameItem.canClean)
     then
     begin
-      Qu.Add(Room.ID, ID, faClean,
+      Qu.Add(Room.ID, ID, Name, faClean,
         GameItem.GetAttr('extra_exp').AsInteger);
 
       ChangeState(STATE_ABANDONED);
@@ -1311,6 +1382,31 @@ begin
 end;
 
 { TMFieldHouse }
+
+function TMFieldHouse.CalcHouseAffected: string;
+var
+ i: integer;
+begin
+  Result := '';
+
+  if not GameItem.GetAttr('buff_population').AsBoolean then exit;
+
+  for i := 0 to length(FRoom.FItems) - 1 do
+    if (FRoom.FItems[i].GameItem <> nil) and
+       (FRoom.FItems[i].GameItem.GetAttr('actions').AsInteger > 0) and
+       (FRoom.FItems[i].ID <> ID) and
+       (FRoom.FItems[i].GameItem.SuperClass = 'excavation_buff_base') and
+       (StrToIntDef(FRoom.FItems[i].InputFill, 0) > 0) and
+       (inAreaOf(FRoom.FItems[i]))
+    then
+    begin
+      Result := IntToStr(FRoom.FItems[i].ID);
+      FRoom.FItems[i].InputFill := IntToStr(
+        StrToIntDef(FRoom.FItems[i].InputFill, 0) - 1);
+
+      break;
+    end;
+end;
 
 procedure TMFieldHouse.ChangeState(NewState: integer);
 begin
@@ -1347,7 +1443,7 @@ begin
        (GetProcessEndDT > Now - 10)
     then
     begin
-      elm := Qu.Add(Room.ID, ID, faTick);
+      elm := Qu.Add(Room.ID, ID, Name, faTick);
       elm.ActionDT := GetProcessEndDT;
 
       ChangeState(STATE_STANDBY);
@@ -1362,9 +1458,9 @@ begin
        (Room.Header.GetFreePopulation > PPL_GUARD_SPACE)
     then
     begin
-      elm := Qu.Add(Room.ID, ID, faPick,
+      elm := Qu.Add(Room.ID, ID, Name, faPick,
         GameItem.GetAttr('extra_exp').AsInteger);
-      aff := '';
+      aff := CalcHouseAffected;
       // TODO: calc affected
       ippl := GameItem.GetAttr('population_increase').AsInteger;
       if aff <> '' then
@@ -1458,7 +1554,7 @@ begin
        (GetProcessEndDT > Now - 10)
     then
     begin
-      elm := Qu.Add(Room.ID, ID, faTick);
+      elm := Qu.Add(Room.ID, ID, Name, faTick);
       elm.ActionDT := GetProcessEndDT;
 
       ChangeState(STATE_ABANDONED);
@@ -1478,7 +1574,7 @@ begin
       if FContractOutputItem <> nil then
         xp := FContractOutputItem.GetAttr('exp').AsInteger;
 
-      Qu.Add(Room.ID, ID, faPick, xp);
+      Qu.Add(Room.ID, ID, Name, faPick, xp);
 
       ChangeState(STATE_STANDBY);
     end;
@@ -1488,7 +1584,7 @@ begin
        (PutKlass <> '')
     then
     begin // moneyin-
-      elm := Qu.Add(Room.ID, ID, faPut, 0);
+      elm := Qu.Add(Room.ID, ID, Name, faPut, 0);
       elm.AddAttr('klass', PutKlass);
 
 {???
@@ -1503,7 +1599,7 @@ begin
        (GameItem.canPick)
     then
     begin // moneyin/2 +
-      Qu.Add(Room.ID, ID, faPick, 0);
+      Qu.Add(Room.ID, ID, Name, faPick, 0);
 
       ChangeState(STATE_DIRTY);
     end;
@@ -1512,7 +1608,7 @@ begin
        (GameItem.canClean)
     then
     begin // money- xp+
-      Qu.Add(Room.ID, ID, faClean, 2);
+      Qu.Add(Room.ID, ID, Name, faClean, 2);
 
       ChangeState(STATE_STANDBY);
     end;

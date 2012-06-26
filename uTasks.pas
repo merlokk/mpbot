@@ -871,16 +871,17 @@ begin
 
   world := TMWorld.GetInstance;
   if (world = nil) or (not world.Valid) then exit;
+  if world.LastUpdate + 10 * OneSecond > Now then exit;
 
   room := world.GetRoom(FMPServ.CurrRoomID);
   if room = nil then exit;
 
   // ---- room tick
   //  ticks more then 30  or
-  //  we have "old" ticks - older then 60 seconds   or
+  //  we have "old" ticks - older then 40 seconds   or
   //  we have no more ticks in 22 seconds
   if (room.FieldsExecuteCount(true, false, 0, Now - 5 * OneSecond) > 30) or
-     (room.FieldsExecuteCount(true, false, 0, Now - 60 * OneSecond) > 0) or
+     (room.FieldsExecuteCount(true, false, 0, Now - 40 * OneSecond) > 0) or
      (room.FieldsExecuteCount(true, false, Now - 5 * OneSecond, Now + 22 * OneSecond) <= 0)
   then
   begin
@@ -920,7 +921,7 @@ begin
   end;
 
   // ---- room switching
-  // 1. last switching was at least 5 miutes ago
+  // 1. last switching was at least 2 miutes ago
   // 2. current room work  up to 60 seconds in future =0
   // 3a. next room work > current room work * 1.3 in period of 10 min
   // 3b. next room work count (- 10 sec) more, then 10
@@ -935,7 +936,7 @@ begin
     nWork := roomn.FieldsExecuteCount(true, true, 0, Now - 10 * OneSecond);
 
     if (i <> room.ID) and
-       (true) and
+       (world.LastRoomChange + 2 * OneMinute < Now) and
        (cWork1m <= 0) and
        ( (nWork10m > cWork10m * 1.3 ) or
          (nWork > 10)
@@ -1231,11 +1232,11 @@ begin
   //  FMPServ.CurrRoomID ---- небольшое отклонение от нормального клиента
   for i := 0 to length(FCurrentWl) - 1 do
     if not inList(FNeededWl, FCurrentWl[i]) then
-      FQu.Add(FMPServ.CurrRoomID, FCurrentWl[i], faRemoveWishList);
+      FQu.Add(FMPServ.CurrRoomID, FCurrentWl[i], IntToStr(FCurrentWl[i]), faRemoveWishList);
 
   for i := 0 to length(FNeededWl) - 1 do
     if not inList(FCurrentWl, FNeededWl[i]) then
-      FQu.Add(FMPServ.CurrRoomID, FNeededWl[i], faAddWishList);
+      FQu.Add(FMPServ.CurrRoomID, FNeededWl[i], IntToStr(FCurrentWl[i]), faAddWishList);
 
   if FQu.Count > 0 then
   begin
@@ -1337,7 +1338,7 @@ procedure TMTaskProcessGifts.QueueAddGift(gift: TSendGiftRec);
 var
   elm: TActionQueueElm;
 begin
-  elm := FQu.Add(FMPServ.CurrRoomID, gift.ID, faSendGift);
+  elm := FQu.Add(FMPServ.CurrRoomID, gift.ID, IntToStr(gift.ID), faSendGift);
   elm.AddAttr('second_user_id', IntToStr(gift.UserID));
   elm.AddAttr('recipient_name', FVK.GetFriendFirstName(gift.UserID));
   elm.AddAttr('sender_name', FVK.UserFirstName);
