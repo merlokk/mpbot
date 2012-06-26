@@ -1329,6 +1329,7 @@ begin
       if FQu.Count > 0 then
       begin
         FMPServ.CheckAndPerform(world, FQu);
+        sleep(FQu.Count * 900);
         FQu.Clear;
       end
       else

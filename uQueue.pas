@@ -169,7 +169,7 @@ begin
     begin
       indx := sl.IndexOf(FQuElm[i].LogName);
       if indx < 0 then
-        sl.AddObject(FQuElm[i].LogName, TObject(0))
+        sl.AddObject(FQuElm[i].LogName, TObject(1))
       else
         sl.Objects[indx] := TObject(integer(sl.Objects[indx]) + 1);
     end;
@@ -177,7 +177,7 @@ begin
     if sl.Count < 13 then
     begin
       for i := 0 to sl.Count - 1 do
-        if integer(sl.Objects[i]) < 1 then
+        if integer(sl.Objects[i]) < 2 then
           Result := Result + sl[i] + ','
         else
           Result := Result + sl[i] + ':' + IntToStr(integer(sl.Objects[i])) + ',';
