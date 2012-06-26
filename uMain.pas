@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ComCtrls, ExtCtrls,
+  Dialogs, StdCtrls, ComCtrls, ExtCtrls, DateUtils,
   uFasade, uLogger, uDB, uGameItems, uMPServ, uDefs;
 
 type
@@ -59,6 +59,8 @@ type
     lbTourists: TLabel;
     Label17: TLabel;
     lbNextWorkInt: TLabel;
+    Label18: TLabel;
+    lbLastUpd: TLabel;
     procedure btInitClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure btLoadDatrabaseClick(Sender: TObject);
@@ -263,6 +265,7 @@ end;
 procedure TMainFrm.Timer1Timer(Sender: TObject);
 var
   world: TMWorld;
+  dt: TDateTime;
 begin
   Timer1.Enabled := false;
   try
@@ -284,7 +287,14 @@ begin
         lbTourists.Caption := world.GetRoomResource(2, 'tourists') + '/' +
            world.GetRoomResource(2, 'tourist_capacity');
         lbCurRoom.Caption := IntToStr(TMPServer.GetInstance.CurrRoomID);
-        lbNextWorkInt.Caption := DateTimeToStr(Fasade.NextWorldUpdate);
+        dt := Fasade.NextWorldUpdate;
+        if dt > now - 1 then
+          lbNextWorkInt.Caption := SecMinToStr(Fasade.NextWorldUpdate - Now)
+        else
+          lbNextWorkInt.Caption := 'never';
+
+        lbLastUpd.Caption := SecMinToStr(Now - world.LastUpdate) + '/' +
+          SecMinToStr(Now - world.LastRoomChange);
 
         Fasade.PaintGraf(world, imGraph.Canvas);
       end
@@ -296,6 +306,7 @@ begin
         lbTourists.Caption := '---';
         lbCurRoom.Caption := '---';
         lbNextWorkInt.Caption := '---';
+        lbLastUpd.Caption := '---';
       end;
     end;
 

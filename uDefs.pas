@@ -111,6 +111,9 @@ function VarToIntDef(v: variant; default: integer): integer;
 function VarToInt64Def(v: variant; default: int64): int64;
 function VarToBoolDef(v: variant; default: boolean): boolean;
 
+// datetime
+function SecMinToStr(dt: TDateTime): string;
+
 implementation
 
 var
@@ -176,6 +179,20 @@ begin
   if VarToStr(v) = '1' then Result := true;
   if VarToStr(v) = '0' then Result := false;
 end;
+
+// datetime
+function SecMinToStr(dt: TDateTime): string;
+var
+  n: integer;
+begin
+  n := Trunc(dt / OneSecond);
+  if n > 100 then
+    Result := IntToStr(n div 60) + 'm'
+  else
+    Result := IntToStr(n) + 's'
+
+end;
+
 
 { FriendRec }
 

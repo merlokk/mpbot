@@ -379,6 +379,20 @@ object MainFrm: TMainFrm
         Height = 16
         Caption = '---'
       end
+      object Label18: TLabel
+        Left = 290
+        Top = 38
+        Width = 100
+        Height = 16
+        Caption = 'Last upd/room ch'
+      end
+      object lbLastUpd: TLabel
+        Left = 396
+        Top = 38
+        Width = 15
+        Height = 16
+        Caption = '---'
+      end
       object lbLog: TListBox
         Left = 3
         Top = 67

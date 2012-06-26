@@ -712,6 +712,7 @@ begin
   world := TMWorld.GetInstance;
   FMPServ.GetRevision(world);
 
+  sleep(500);
   // first request to MP server
   FMPServ.GetUserStat(world, 0, true);
   room0 := world.GetRoom(0);
@@ -721,6 +722,7 @@ begin
     room := world.GetRoom(i);
     if (room = nil) or (not room.Avaliable) then continue;
 
+    sleep(2000);
     FMPServ.GetUserStat(world, i);
   end;
 
@@ -878,7 +880,7 @@ begin
   //  we have "old" ticks - older then 60 seconds   or
   //  we have no more ticks in 22 seconds
   if (room.FieldsExecuteCount(true, false, 0, Now - 5 * OneSecond) > 30) or
-     (room.FieldsExecuteCount(true, false, Now - 60 * OneSecond, Now - 5 * OneSecond) > 0) or
+     (room.FieldsExecuteCount(true, false, 0, Now - 60 * OneSecond) > 0) or
      (room.FieldsExecuteCount(true, false, Now - 5 * OneSecond, Now + 22 * OneSecond) <= 0)
   then
   begin
@@ -948,6 +950,9 @@ begin
         ' nWork:' + IntToStr(nWork)
         );
       FMPServ.GetUserStat(world, i);
+
+      // if we changed room - end of the task!!!
+      exit;
     end;
   except
     exit;

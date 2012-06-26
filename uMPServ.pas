@@ -518,6 +518,7 @@ begin
     FSessionKey := World.LastHeader.SessionKey;
 
     World.CheckRoomInformation(World.LastHeader.RoomInformation);
+    World.LastRoomChange := Now;
 
     Result := true;
     AddLog('server_time=' + IntToStr(World.LastHeader.ServerTime) +

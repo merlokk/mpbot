@@ -283,7 +283,8 @@ type
     function GetSWFRevisionAppID: string;
     function GetOwnerID: int64;
   public
-    LastUpdate: TDateTime;
+    LastUpdate,
+    LastRoomChange: TDateTime;
     LastHeader: TWorldHeader;
 
     Friends: TFriendRecArray;
@@ -683,6 +684,8 @@ begin
   FValid := false;
   FUserDisabled := false;
   LastHeader.Clear;
+  LastUpdate := 0;
+  LastRoomChange := 0;
   SetLength(Friends, 0);
   SetLength(Barn, 0);
   SetLength(RecvdGift, 0);
