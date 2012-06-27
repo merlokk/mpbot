@@ -197,18 +197,17 @@ type
     procedure Execute(canTick, canWork: boolean); override;
   end;
 
-  TMFieldFactoryCustom = class (TMFieldFactory)
-  private
-    function GetSlotsCount(JSONPath: string = 'slots.count'): integer;
-  public
-  end;
-
-  TMFieldCentralStation = class (TMFieldFactoryCustom)
+  TMFieldFactoryWithHelp = class (TMFieldFactory)
   private
     FLastSendHelp: TDateTime;
-  public
-    procedure Clear; override;
+    FLastFriendGroup: integer;
 
+    function GetSlotsCount(JSONPath: string = 'slots.count'): integer;
+  public
+    ExecContract: TExecContractRec;
+
+    constructor Create; override;
+    procedure Clear; override;
     procedure Execute(canTick, canWork: boolean); override;
   end;
 
@@ -348,6 +347,7 @@ type
   end;
 
 implementation
+uses uDB, uFactories;
 
 { TMGameItem }
 
@@ -1673,18 +1673,37 @@ end;
 
 { TMFieldFactoryCustom }
 
-function TMFieldFactoryCustom.GetSlotsCount(JSONPath: string): integer;
+procedure TMFieldFactoryWithHelp.Clear;
+begin
+  inherited;
+
+  ExecContract.Clear;
+end;
+
+constructor TMFieldFactoryWithHelp.Create;
+begin
+  inherited;
+
+  FLastSendHelp := 0;
+  FLastFriendGroup := 0;
+end;
+
+function TMFieldFactoryWithHelp.GetSlotsCount(JSONPath: string): integer;
 var
   obj: ISuperObject;
-  ContractClass: integer;
+  item: TMGameItem;
 begin
   Result := 0;
 
   try
-    ContractClass := StrToIntDef(ContractInput, 0);
-    if ContractClass <= 0 then exit;
+    // some scripting )
+    JSONPath := ReplaceStr(JSONPath, '<name>', Name);
 
-    obj := TSuperObject.ParseString(PWideChar(GameItem.GetAttr('extra_params').AsString), false);
+    //  get contract help slots count
+    item := TItemsFactory.GetInstance.GetGameItem(StrToIntDef(ContractInput, 0));
+    if item = nil then exit;
+
+    obj := TSuperObject.ParseString(PWideChar(item.GetAttr('extra_params').AsString), false);
     if obj = nil then exit;
 
     if obj.S['type'] = 'slots' then
@@ -1693,39 +1712,33 @@ begin
   end;
 end;
 
-{ TMFieldCentralStation }
-
-procedure TMFieldCentralStation.Clear;
-begin
-  inherited;
-
-  FLastSendHelp := 0;
-end;
-
-procedure TMFieldCentralStation.Execute(canTick, canWork: boolean);
+procedure TMFieldFactoryWithHelp.Execute(canTick, canWork: boolean);
 var
   cnt: integer;
   elm: TActionQueueElm;
 begin
   inherited;
-{
-  //  send message
-  if (State = STATE_WORK) and
-     (not isDeny) and
-     (FLastSendHelp + 60 * OneMinute < Now)  //  send once per 60 min
-  then
+
+  if canWork then
   begin
-    cnt := GetSlotsCount('slots.train_station_small_stage5.slots');
-    if (cnt > 0) and (cnt > FRoom.Header.GetVisitorsCount(ID)) then
+    //  send message
+    if (State = STATE_WORK) and
+       (ExecContract.HelpName <> '') and
+       (not isDeny) and
+       (FLastSendHelp + 60 * OneMinute < Now)  //  send per 60 min
+    then
     begin
-      elm := Qu.Add(Room.ID, ID, Name, faSendRequest, 0);
-  // ????? get name and message from DB ??????
-      elm.AddAttr('name', 'visit_international_passenger_traffic');
-      elm.AddAttr('message', '0J3QsCDQstC_0LrQt9Cw0Lsg0LLQsNGI0LXQs9C_INCc0LXQs9Cw0L/QvtC70LjRgdCwINC/0YDQu' +
-                             'NCx0YvQuyDQv9C_0LXQt9C0INC40Lcg0LPQvtGA0L7QtNCwINCy0LDRiNC10LPQviDQtNGA0YPQs9CwISDQoNCw0LfRgNC10YjQuNCyINC10LzRgyDRgdC00LXQu9Cw0YLRjCDQvtGB0YLQsNC90L7QstC60YMg0LIg0LLQsNGI0LXQvCDQs9C_0YDQvtC00LUsINCy0Ysg0L/QvtC70YPRh9C40YLQtSDQvdCw0LPRgNCw0LTRgyE='
-      );
+      cnt := GetSlotsCount(ExecContract.HelpSlotsLink);
+      if (cnt > 0) and (cnt > FRoom.Header.GetVisitorsCount(ID)) then
+      begin
+        elm := Qu.Add(Room.ID, ID, Name, faSendRequest, 0);
+        elm.AddAttr('name', ExecContract.HelpName);
+        elm.AddAttr('msg', ExecContract.HelpMsg);
+        elm.AddAttr('notify', TMPdatabase.GetInstance.GetGroupedAppFriends(FLastFriendGroup, 100));
+        FLastSendHelp := now;
+      end;
     end;
-  end;   }
+  end;
 end;
 
 end.

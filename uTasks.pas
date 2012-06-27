@@ -1273,14 +1273,16 @@ begin
   world := TMWorld.GetInstance;
   if (world = nil) or (not world.Valid) then exit;
 
-  PckCount := 40 + random(20);
   FQu.Clear;
   FQu.CurrentXP := world.LastHeader.Exp;
 
   // send gifts
   if length(world.AvailGift) > 0 then
+  begin
     for i := 1 to 5 do
     begin
+      PckCount := 40 + random(20);
+
       // wishlist
       FIBQuery := FDB.MakeGifts;
       while (not FIBQuery.Eof) and (FQu.Count < PckCount) do
@@ -1335,6 +1337,10 @@ begin
       else
        break;  // nothing to send
     end;
+
+    if length(world.AvailGift) > 0 then
+      AddLog('remains ' + IntToStr(length(world.AvailGift)) + ' gifts!!!', 0);
+  end;
 end;
 
 procedure TMTaskProcessGifts.QueueAddGift(gift: TSendGiftRec);

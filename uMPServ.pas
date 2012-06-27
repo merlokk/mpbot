@@ -968,8 +968,14 @@ begin
     if Self is TMFieldFactory then
       with TMFieldFactory(Self) do
       begin
-        PutKlass := TMPdatabase.GetInstance.GetCPutKlass(Name);
+        PutKlass := TMPdatabase.GetInstance.GetExecContract(Name).Klass;
         PutGameItem := TItemsFactory.GetInstance.GetGameItem(PutKlass);
+      end;
+
+    if Self is TMFieldFactoryWithHelp then
+      with TMFieldFactoryWithHelp(Self) do
+      begin
+        ExecContract := TMPdatabase.GetInstance.GetExecContract(Name);
       end;
 
     LastUpdate := Now;

@@ -138,6 +138,7 @@ end;
 function TFieldsFactory.GetField(name: string): TMField;
 var
   item: TMGameItem;
+  ExecContract: TExecContractRec;
 begin
   Result := nil;
   item := FIFactory.GetGameItem(name);
@@ -152,8 +153,9 @@ begin
     gitPlace: Result := TMFieldPlace.Create;
     gitFactory:
       begin
-        if name = 'central_station' then
-          Result := TMFieldCentralStation.Create;
+        ExecContract := TMPdatabase.GetInstance.GetExecContract(Name);
+        if ExecContract.HelpName <> '' then
+          Result := TMFieldFactoryWithHelp.Create;
 
         if Result = nil then
           Result := TMFieldFactory.Create;

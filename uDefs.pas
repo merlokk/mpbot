@@ -61,10 +61,15 @@ type
     Score: extended;
   end;
 
-  ExecContractRec = packed record
-    name,
-    klass,
-    affected_items: string;
+  TExecContractRec = packed record
+    Name,
+    Klass,
+    AffectedItems,
+    HelpName,
+    HelpSlotsLink,
+    HelpMsg: string;
+
+    procedure Clear;
   end;
 
   TSendGiftRec = packed record
@@ -217,6 +222,18 @@ begin
   ID := 0;
   GameItemID := 0;
   UserID := 0;
+end;
+
+{ TExecContractRec }
+
+procedure TExecContractRec.Clear;
+begin
+  Name := '';
+  Klass := '';
+  AffectedItems := '';
+  HelpName := '';
+  HelpSlotsLink := '';
+  HelpMsg := '';
 end;
 
 initialization

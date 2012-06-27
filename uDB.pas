@@ -25,7 +25,7 @@ type
 //    FRewardList: array of WantListRec;
     FRewardLoaded: boolean;
 
-    FExecContractList: array of ExecContractRec;
+    FExecContractList: array of TExecContractRec;
     FExecContractListLoaded: TDateTime;
 
     FGameFriend: array of integer;
@@ -64,7 +64,7 @@ type
 //    procedure SetFriendNextHelp(FriendID: int64; Date: TDateTime);
 //    function CanHelpFriend(FriendID: int64): boolean;
     function AddFriendActivityPoints(FriendID: int64): boolean;
-//    function GetGroupedAppFriends(var GroupNum: integer; GroupCount: integer): string;
+    function GetGroupedAppFriends(var GroupNum: integer; GroupCount: integer): string;
 
     function RecvdGiftsDisable: boolean;
     function RecvdGiftUpdate(gift: TGiftRec): boolean;
@@ -98,7 +98,7 @@ type
 //    function isFieldDenyForWhishList(field: FieldRec): boolean;
 
 //    function CanPut(item: GameItemRec): boolean;
-    function GetCPutKlass(FactoryName: string): string;
+    function GetExecContract(FactoryName: string): TExecContractRec;
 //    function GetCAffectedItems(item: GameItemRec): string;
 
     function GetTodayUsedGiftsCnt: integer;
@@ -445,7 +445,6 @@ begin
   FIBQuery.ExecQuery;
   Result := FIBQuery.ParamValue('id');
 end;
-   {
 
 function TMPdatabase.GetGroupedAppFriends(var GroupNum: integer; GroupCount: integer): string;
 var
@@ -473,7 +472,7 @@ begin
     FIBQueryCurs.SQL.Text :=
       'select * from friends where ingame=1 ' +
       'order by trunc((activity + 9) / 10) desc, ' +
-      'level desc';
+      'level desc, id';
     FIBQueryCurs.ExecQuery;
 
     cnt := 0;
@@ -523,7 +522,7 @@ begin
     Result := Copy(Result, 1, length(Result) - 1);
   except
   end;
-end;        }
+end;
 
 class function TMPdatabase.GetInstance: TMPdatabase;
 begin
@@ -684,18 +683,18 @@ begin
   end;
 end;
 
-function TMPdatabase.GetCPutKlass(FactoryName: string): string;
+function TMPdatabase.GetExecContract(FactoryName: string): TExecContractRec;
 var
  i: integer;
 begin
-  Result := '';
+  Result.Clear;
   if not Connected then exit;
   UpdateExecContractList;
 
   for i := 0 to Length(FExecContractList) - 1 do
-    if pos(FExecContractList[i].name, FactoryName) = 1 then
+    if pos(FExecContractList[i].Name, FactoryName) = 1 then
     begin
-      Result := FExecContractList[i].klass;
+      Result := FExecContractList[i];
       exit;
     end;
 end;
@@ -939,12 +938,18 @@ begin
     while not FIBQueryCurs.Eof do
     begin
       SetLength(FExecContractList, length(FExecContractList) + 1);
-      FExecContractList[length(FExecContractList) - 1].name :=
+      FExecContractList[length(FExecContractList) - 1].Name :=
         trim(FIBQueryCurs.FieldByName('FACTORY_NAME').AsString);
-      FExecContractList[length(FExecContractList) - 1].klass :=
+      FExecContractList[length(FExecContractList) - 1].Klass :=
         trim(FIBQueryCurs.FieldByName('CONTRACT_NAME').AsString);
-      FExecContractList[length(FExecContractList) - 1].affected_items :=
+      FExecContractList[length(FExecContractList) - 1].AffectedItems :=
         trim(FIBQueryCurs.FieldByName('AFFECTED_ITEMS').AsString);
+      FExecContractList[length(FExecContractList) - 1].HelpName :=
+        trim(FIBQueryCurs.FieldByName('HELP_NAME').AsString);
+      FExecContractList[length(FExecContractList) - 1].HelpSlotsLink :=
+        trim(FIBQueryCurs.FieldByName('HELP_SLOTS_LINK').AsString);
+      FExecContractList[length(FExecContractList) - 1].HelpMsg :=
+        trim(FIBQueryCurs.FieldByName('HELP_MSG').AsString);
 
       FIBQueryCurs.Next;
     end;
