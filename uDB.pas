@@ -5,7 +5,7 @@ uses
   Windows, Messages, SysUtils, Variants, Classes, Forms, math, Types,
   FIBDatabase, pFIBDatabase, FIBQuery, pFIBQuery, pFIBProps, uDefs,
   StrUtils, Generics.Collections, Generics.Defaults,
-  uGameItems;
+  uGameItems, uLogger;
 
 type
   TMPdatabase = class
@@ -420,6 +420,7 @@ begin
 
   try
     //  рассыпаем ненужные подарки начиная с мелких и в игре
+    FIBQueryCurs.Close;
     FIBQueryCurs.SQL.Text :=
       'select fr.* ' +
       'from friends fr ' +
@@ -428,6 +429,7 @@ begin
     FIBQueryCurs.ExecQuery;
     Result := FIBQueryCurs;
   except
+    AddLog('GetGiftFriendsList execution exception', 0);
   end;
 end;
 
@@ -871,6 +873,7 @@ begin
   if not Connected then exit;
 
   try
+    FIBQueryCurs.Close;
     FIBQueryCurs.SQL.Text :=
       'select fr.*, gi.name, wi.game_items_id, ga.id as gift_un_id ' +
       'from friends fr, wishlist wi, gifts_avail ga, game_items gi ' +
@@ -884,6 +887,7 @@ begin
     FIBQueryCurs.ExecQuery;
     Result := FIBQueryCurs;
   except
+    AddLog('MakeGifts execution exception', 0);
   end;
 end;
 {

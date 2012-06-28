@@ -405,7 +405,13 @@ object MainFrm: TMainFrm
   end
   object Timer1: TTimer
     OnTimer = Timer1Timer
-    Left = 16
-    Top = 104
+    Left = 96
+    Top = 496
+  end
+  object TrayIcon1: TTrayIcon
+    Visible = True
+    OnClick = TrayIcon1Click
+    Left = 32
+    Top = 496
   end
 end

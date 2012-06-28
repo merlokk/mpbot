@@ -1279,13 +1279,15 @@ begin
   // send gifts
   if length(world.AvailGift) > 0 then
   begin
+    AddLog('found ' + IntToStr(length(world.AvailGift)) + ' gifts tto send!!!', 0);
     for i := 1 to 5 do
     begin
       PckCount := 40 + random(20);
 
       // wishlist
       FIBQuery := FDB.MakeGifts;
-      while (not FIBQuery.Eof) and (FQu.Count < PckCount) do
+      if FIBQuery = nil then AddLog('FIBQuery = nil!!!', 0);
+      while (FIBQuery <> nil) and (not FIBQuery.Eof) and (FQu.Count < PckCount) do
       begin
         gift.Clear;
         gift.ID := FIBQuery.FieldByName('gift_un_id').AsInteger;
@@ -1305,7 +1307,8 @@ begin
 
       // send other gifts. max level for random gifts - 100 (dont spam with gifts)
       FIBQuery := FDB.GetGiftFriendsList(100);
-      while (not FIBQuery.Eof) and (FQu.Count < PckCount) do
+      if FIBQuery = nil then AddLog('FIBQuery = nil!!!', 0);
+      while (FIBQuery <> nil) and (not FIBQuery.Eof) and (FQu.Count < PckCount) do
       begin
         gift.Clear;
         gift.UserID := FIBQuery.FieldByName('ID').AsInt64;

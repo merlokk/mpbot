@@ -61,6 +61,7 @@ type
     lbNextWorkInt: TLabel;
     Label18: TLabel;
     lbLastUpd: TLabel;
+    TrayIcon1: TTrayIcon;
     procedure btInitClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure btLoadDatrabaseClick(Sender: TObject);
@@ -70,6 +71,7 @@ type
     procedure btParamSaveClick(Sender: TObject);
     procedure btParamLoadClick(Sender: TObject);
     procedure cbParamGroupChange(Sender: TObject);
+    procedure TrayIcon1Click(Sender: TObject);
   private
     { Private declarations }
     Fasade: TMPFasade;
@@ -314,6 +316,14 @@ begin
   finally
     Timer1.Enabled := true;
   end;
+end;
+
+procedure TMainFrm.TrayIcon1Click(Sender: TObject);
+begin
+  if WindowState = wsMinimized then
+    WindowState := wsNormal;
+
+  SetForegroundWindow(MainFrm.Handle);
 end;
 
 end.
