@@ -1365,9 +1365,29 @@ begin
 end;
 
 procedure TMTaskFriendHelp.IntExecute;
+var
+  StartDT: TDateTime;
+  world: TMWorld;
+  i: integer;
 begin
   inherited;
 
+  world := TMWorld.GetInstance;
+  if (world = nil) or (not world.Valid) then exit;
+
+  FQu.Clear;
+  FQu.CurrentXP := world.LastHeader.Exp;
+  StartDT := Now;
+
+{  for i := 0 to length(world.Friends) - 1 do
+    if world.Friends[i].NeedHelp and
+       db.CanHelpFriend(world.Friends[i].id) then
+    begin
+
+      world.Friends[i].NextVisitDT := Now + 1;
+      // only allowed 10 min of work time
+      if StartDT + 10 * OneMinute < Now then break;
+    end;  }
 end;
 
 end.

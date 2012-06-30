@@ -1721,6 +1721,12 @@ begin
 
   if canWork then
   begin
+    // clear sendhelp state if not working
+    if (State = STATE_STANDBY) then
+    begin
+      FLastSendHelp := 0;
+    end;
+
     //  send message
     if (State = STATE_WORK) and
        (ExecContract.HelpName <> '') and
