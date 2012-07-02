@@ -62,7 +62,7 @@ type
     procedure FillGameFriends(lst: string);
     function FillGameFriendsFromDB: boolean;
 //    procedure SetFriendNextHelp(FriendID: int64; Date: TDateTime);
-//    function CanHelpFriend(FriendID: int64): boolean;
+    function CanHelpFriend(FriendID: int64): boolean;
     function AddFriendActivityPoints(FriendID: int64): boolean;
     function GetGroupedAppFriends(var GroupNum: integer; GroupCount: integer): string;
 
@@ -97,7 +97,6 @@ type
     function FieldIsDeny(Name: string): boolean;
 //    function isFieldDenyForWhishList(field: FieldRec): boolean;
 
-//    function CanPut(item: GameItemRec): boolean;
     function GetExecContract(FactoryName: string): TExecContractRec;
 //    function GetCAffectedItems(item: GameItemRec): string;
 
@@ -181,7 +180,7 @@ begin
   except
   end;
 end;
-    {
+
 function TMPdatabase.CanHelpFriend(FriendID: int64): boolean;
 begin
   Result := false;
@@ -197,23 +196,6 @@ begin
   except
   end;
 end;
-
-function TMPdatabase.CanPut(item: GameItemRec): boolean;
-var
- i: integer;
-begin
-  Result := false;
-  if not Connected then exit;
-  if not FExecContractListLoaded then
-    FillExecContractList;
-
-  for i := 0 to Length(FExecContractList) - 1 do
-    if pos(FExecContractList[i].name, item.ItemName) = 1 then
-    begin
-      Result := true;
-      exit;
-    end;
-end; }
 
 class constructor TMPdatabase.ClassCreate;
 begin
@@ -240,12 +222,17 @@ begin
 end;
 
 function TMPdatabase.Connect: boolean;
+var
+  FileName: string;
 begin
   Result := false;
   if Connected then exit;
 
-//  FIBDatabase.DBName := ExtractFilePath(Application.ExeName) + 'mpolis.fdb';
-  FIBDatabase.DBName := 'C:\Projects\!chrome\MPolis2\mpolis.fdb';
+  FileName := ExtractFilePath(Application.ExeName) + 'mpolis.fdb';
+  if FileExists(FileName) then
+    FIBDatabase.DBName := FileName
+  else
+    FIBDatabase.DBName := 'C:\Projects\!chrome\MPolis2\mpolis.fdb';
   FIBDatabase.DBParams.Values['user_name'] := 'SYSDBA';
   FIBDatabase.DBParams.Values['password'] := 'masterkey';
   FIBDatabase.DBParams.Values['lc_ctype'] := 'utf-8';
