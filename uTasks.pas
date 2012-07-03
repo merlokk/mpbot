@@ -927,6 +927,7 @@ begin
   // 2. current room work  up to 60 seconds in future =0
   // 3a. next room work > current room work * 1.3 in period of 10 min
   // 3b. next room work count (- 10 sec) more, then 10
+  // 4 next room work count (- 10 sec) > 0
   for i := 0 to world.GetRoomCount - 1 do
   try
     roomn := world.GetRoom(i);
@@ -942,7 +943,8 @@ begin
        (cWork1m <= 0) and
        ( (nWork10m > cWork10m * 1.3 ) or
          (nWork > 10)
-       )
+       ) and
+       (nWork > 0)
     then
     begin
       AddLog('NEED SWITCH:' +
@@ -1399,14 +1401,15 @@ begin
   FriendWorld.LastHeader := world.LastHeader;
   StartDT := Now;
 
+  RoomID := 0;
   for i := 0 to length(world.Friends) - 1 do
     if (world.Friends[i].ID <> OwnerID) and
        world.Friends[i].NeedHelp and
-       FDB.CanHelpFriend(world.Friends[i].ID) then
+       FDB.CanHelpFriend(RoomID, world.Friends[i].ID) then
     begin
       HelpCount := HelpCount + 1;
       sleep(1000);
-      if not FMPServ.GetUserStatFriend(FriendWorld, 0, LastFriend, world.Friends[i].ID, FQu)
+      if not FMPServ.GetUserStatFriend(FriendWorld, RoomID, LastFriend, world.Friends[i].ID, FQu)
       then continue;
 
       RoomID := 0;

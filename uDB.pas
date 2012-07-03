@@ -62,7 +62,7 @@ type
     procedure FillGameFriends(lst: string);
     function FillGameFriendsFromDB: boolean;
     procedure UpdateFriendHelp(RoomID: integer; FriendID: int64; HelpCount: integer; Date: TDateTime);
-    function CanHelpFriend(FriendID: int64): boolean;
+    function CanHelpFriend(RoomID: integer; FriendID: int64): boolean;
     function AddFriendActivityPoints(FriendID: int64): boolean;
     function GetGroupedAppFriends(var GroupNum: integer; GroupCount: integer): string;
 
@@ -181,7 +181,7 @@ begin
   end;
 end;
 
-function TMPdatabase.CanHelpFriend(FriendID: int64): boolean;
+function TMPdatabase.CanHelpFriend(RoomID: integer; FriendID: int64): boolean;
 begin
   Result := false;
   if not Connected then exit;
@@ -189,6 +189,7 @@ begin
   try
     FIBQuery.SQL.Text :=
       'execute procedure CAN_HELP_FRIEND(' +
+      IntToStr(RoomID) + ',' +
       IntToStr(FriendID) + ')';
     FIBQuery.ExecQuery;
 

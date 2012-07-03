@@ -1797,7 +1797,10 @@ begin
     begin
       elm := Qu.Add(Room.ID, ID, Name, faTick);
       elm.ActionDT := GetProcessEndDT;
-//      ContractOutput := ContractInput; !!!!!!!!!!!!!!!!!!
+      ContractOutput := ContractInput;
+      ContractInput := '';
+      OutputFill := InputFill;
+      InputFill := '';
 
       ChangeState(STATE_ABANDONED);
     end;
