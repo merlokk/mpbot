@@ -85,6 +85,8 @@ type
     Level: integer;
     WishList,
     HelpItems,
+    Requests,
+    SendRequests,
     RoomInfo: String;
     RewardPoints: Extended;
     HaveGift: boolean;
@@ -92,6 +94,8 @@ type
     NextVisitDT: TDateTime;
 
     procedure Clear;
+    function NeedHelp: boolean;
+    procedure DisableHelp;
   end;
   TFriendRecArray = array of TFriendRec;
 
@@ -208,6 +212,8 @@ begin
   Level := 0;
   WishList := '';
   HelpItems := '';
+  Requests := '';
+  SendRequests := '';
   RoomInfo := '';
   RewardPoints := 0;
   HaveGift := true;
@@ -234,6 +240,19 @@ begin
   HelpName := '';
   HelpSlotsLink := '';
   HelpMsg := '';
+end;
+
+procedure TFriendRec.DisableHelp;
+begin
+  NextVisitDT := Now + 1;
+  HelpPointsCnt := 0;
+end;
+
+function TFriendRec.NeedHelp: boolean;
+begin
+  Result := (NextVisitDT = 0) or
+    (NextVisitDT < Now) or
+    ((NextVisitDT > Now) and (HelpPointsCnt > 0));
 end;
 
 initialization

@@ -68,6 +68,7 @@ type
     function GetHeight: integer;
     function GetRadius: integer;
     function GetWidth: integer;
+    function GetcanHelp: boolean;
   public
     constructor Create;
     procedure Clear;
@@ -87,6 +88,7 @@ type
     property canPick: boolean read GetcanPick;
     property canClean: boolean read  GetcanClean;
     property canPut: boolean read  GetcanPut;
+    property canHelp: boolean read  GetcanHelp;
     property isBuildSite: boolean read GetisBuildSite;
     property ItemType: TMGameItemType read GetItemType;
     property isFactory: boolean read GetIsFactory;
@@ -160,6 +162,8 @@ type
 
     procedure ClearTick;
     procedure Execute(canTick, canWork: boolean); virtual;
+    function CanHelp: boolean;
+    procedure CalcHelp(FriendID: int64); virtual;
 
     property FieldType: TMGameItemType read GetFieldType;
     property Room: TMRoom read FRoom write SetRoom;
@@ -179,6 +183,7 @@ type
     function GetActionDT(canTick, canWork: boolean): TDateTime; override;
     procedure ChangeState(NewState: integer);
     procedure Execute(canTick, canWork: boolean); override;
+    procedure CalcHelp(FriendID: int64); override;
   end;
 
   TMFieldBuilding = class (TMField)
@@ -245,6 +250,10 @@ type
     Visitors: String;
     RoomResourcesArray: TNameValSArr;
 
+    HelpPoints,
+    NotPlayDays: integer;
+    OwnerRoomInformation: string;
+
     LastTick: cardinal;
 
     procedure Clear;
@@ -275,6 +284,7 @@ type
     function StartFieldsUpdate: cardinal;
     function GetField(AID: int64): TMField;
     function GetFieldI(indx: integer): TMField;
+    function GetFieldIndxByPos(x, y: integer): integer;
     procedure AddField(field: TMField);
     procedure EndFieldsUpdate(serial: cardinal);
     function GetFieldsCountByType(state: integer): integer;
@@ -284,6 +294,7 @@ type
     procedure FieldsExecute(MaxCount: integer; canTick, canWork: boolean); virtual;
     function FieldsExecuteCount(canTick, canWork: boolean; FromDate, ToDate: TDateTime): integer;
     function FieldGrafFill(var gr: TFieldGraf): boolean;
+    procedure FieldsHelp(MaxCount: integer; UserID: int64); virtual;
 
     property ID: integer read FID write FID;
     property FieldsCount: integer read GetFieldsCount;
@@ -429,6 +440,11 @@ end;
 function TMGameItem.GetcanClean: boolean;
 begin
   Result := GetAttr('clean').AsBoolean;
+end;
+
+function TMGameItem.GetcanHelp: boolean;
+begin
+  Result := GetAttr('help').AsBoolean;
 end;
 
 function TMGameItem.GetcanPick: boolean;
@@ -947,6 +963,10 @@ begin
   Visitors := '';
   SetLength(RoomResourcesArray, 0);
 
+  HelpPoints := 0;
+  NotPlayDays := 100;
+  OwnerRoomInformation := '';
+
   LastTick := 0;
 end;
 
@@ -1115,6 +1135,21 @@ begin
   end;
 end;
 
+procedure TMRoom.FieldsHelp(MaxCount: integer; UserID: int64);
+var
+  i: Integer;
+  Qu: TActionQueue;
+begin
+  Qu := TActionQueue.GetInstance;
+  for i := 0 to length(FItems) - 1 do
+  begin
+    if (MaxCount <> 0) and (MaxCount <= Qu.Count)
+    then break;
+
+    FItems[i].CalcHelp(UserID);
+  end;
+end;
+
 function TMRoom.StrFieldsStat: string;
 begin
   Result := 'BUILD/STANDBY/WORK/ABAND/DIRTY/EXPIR ' +
@@ -1145,6 +1180,21 @@ begin
   if (indx < 0) or (indx >= length(FItems)) then exit;
 
   Result := FItems[indx];
+end;
+
+function TMRoom.GetFieldIndxByPos(x, y: integer): integer;
+var
+ i: integer;
+begin
+  Result := -1;
+
+  for i := 0 to length(FItems) - 1 do
+  if (FItems[i].x = x) and
+     (FItems[i].y = y) then
+  begin
+    Result := i;
+    break;
+  end;
 end;
 
 function TMRoom.GetFieldsCountByType(state: integer): integer;
@@ -1209,6 +1259,64 @@ begin
 end;
 
 { TMField }
+
+procedure TMField.CalcHelp(FriendID: int64);
+var
+  elm: TActionQueueElm;
+begin
+  if not CanHelp then exit;
+  try
+    // build help
+    if (GameItem <> nil) and
+       (GameItem.canHelp) and
+       (State = STATE_BUILD) then
+    begin
+      elm := Qu.Add(Room.ID, ID, Name, faHelp, 3);
+      elm.AddAttr('klass', Name);
+      elm.AddAttr('friend_id', FriendID);
+    end;
+
+    // buildable_help (rails, central port, ...etc)
+    if (GameItem <> nil) and
+       (GameItem.isBuildSite) and
+       (GameItem.GetAttr('buildable_help').AsBoolean) and
+       (State = STATE_STANDBY) then
+    begin
+      elm := Qu.Add(Room.ID, ID, Name, faHelp, 3);
+      elm.AddAttr('klass', Name);
+      elm.AddAttr('friend_id', FriendID);
+    end;
+  except
+  end;
+end;
+
+function TMField.CanHelp: boolean;
+begin
+  Result := true;
+
+  //  picnic objects disabled
+  if pos('picnic', Name) > 0 then
+  begin
+    Result := false;
+    exit;
+  end;
+
+  //  bigbon objects disabled
+  if pos('bigbon', Name) > 0 then
+  begin
+    Result := false;
+    exit;
+  end;
+
+  //  double rails after bridge disabled
+  if (x = 24) and (y < 49) and
+     (FRoom.GetFieldIndxByPos(24, 55) < 0)
+  then
+  begin
+    Result := false;
+    exit;
+  end;
+end;
 
 procedure TMField.Clear;
 begin
@@ -1532,6 +1640,107 @@ end;
 
 { TMFieldFactory }
 
+{  // help build
+  for i := 0 to length(fields) - 1 do
+  if (fields[i].State = STATE_BUILD) and
+     (CanHelp(fields[i])) then
+  begin
+    SetLength(FClFields, length(FClFields) + 1);
+    FClFields[length(FClFields) - 1] := fields[i];
+    FClFields[length(FClFields) - 1].Cleaned := false;
+    FClFields[length(FClFields) - 1].Func := FN_HELP;
+    FClFields[length(FClFields) - 1].PutKlass :=
+      fields[i].Name;
+
+    fields[i].State := STATE_CMDCOMPLETED;
+  end;
+
+  // buildable_help (rails, central port, ...etc)
+  for i := 0 to length(fields) - 1 do
+  if (fields[i].State = STATE_STANDBY) and
+     (fields[i].item.isBuildSite) and
+     (fields[i].item.BuildableHelp) and
+     (CanHelp(fields[i]))
+  then
+  begin
+    SetLength(FClFields, length(FClFields) + 1);
+    FClFields[length(FClFields) - 1] := fields[i];
+    FClFields[length(FClFields) - 1].Cleaned := false;
+    FClFields[length(FClFields) - 1].Func := FN_HELP;
+    FClFields[length(FClFields) - 1].PutKlass :=
+      fields[i].Name;
+
+    fields[i].State := STATE_CMDCOMPLETED;
+  end;
+
+  // help contract
+  for i := 0 to length(fields) - 1 do
+  if (fields[i].State = STATE_WORK) and
+     (fields[i].item.canHelp) and
+     (fields[i].item.canPick) and
+     (fields[i].item.canPut) and
+     (fields[i].item.isFactory) and
+     (CanHelp(fields[i]))
+  then
+  begin
+    SetLength(FClFields, length(FClFields) + 1);
+    FClFields[length(FClFields) - 1] := fields[i];
+    FClFields[length(FClFields) - 1].Cleaned := false;
+    FClFields[length(FClFields) - 1].Func := FN_HELP;
+    FClFields[length(FClFields) - 1].PutKlass :=
+      fields[i].Name;
+
+    fields[i].State := STATE_CMDCOMPLETED;
+  end;
+
+  // help expired
+  for i := 0 to length(fields) - 1 do
+  if (fields[i].State = STATE_EXPIRED) and
+     (fields[i].item.canHelp) and
+     (CanHelp(fields[i]))
+  then
+  begin
+    SetLength(FClFields, length(FClFields) + 1);
+    FClFields[length(FClFields) - 1] := fields[i];
+    FClFields[length(FClFields) - 1].Cleaned := false;
+    FClFields[length(FClFields) - 1].Func := FN_HELP;
+    FClFields[length(FClFields) - 1].PutKlass :=
+      fields[i].Name;
+
+    fields[i].State := STATE_CMDCOMPLETED;
+  end;
+}
+
+procedure TMFieldFactory.CalcHelp(FriendID: int64);
+var
+  elm: TActionQueueElm;
+begin
+  inherited;
+  if not CanHelp then exit;
+  try
+    // help contract
+    if (GameItem <> nil) and
+       (GameItem.canHelp) and
+       (State = STATE_WORK) then
+    begin
+      elm := Qu.Add(Room.ID, ID, Name, faHelp, 3);
+      elm.AddAttr('klass', Name);
+      elm.AddAttr('friend_id', FriendID);
+    end;
+
+    // help expired contract
+    if (GameItem <> nil) and
+       (GameItem.canHelp) and
+       (State = STATE_EXPIRED) then
+    begin
+      elm := Qu.Add(Room.ID, ID, Name, faHelp, 3);
+      elm.AddAttr('klass', Name);
+      elm.AddAttr('friend_id', FriendID);
+    end;
+  except
+  end;
+end;
+
 procedure TMFieldFactory.ChangeState(NewState: integer);
 begin
   if State = NewState then exit;
@@ -1588,6 +1797,7 @@ begin
     begin
       elm := Qu.Add(Room.ID, ID, Name, faTick);
       elm.ActionDT := GetProcessEndDT;
+//      ContractOutput := ContractInput; !!!!!!!!!!!!!!!!!!
 
       ChangeState(STATE_ABANDONED);
     end;

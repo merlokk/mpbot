@@ -974,7 +974,10 @@ end;
 procedure TMTaskWorkDispatcher.IntExecute;
 var
   world: TMWorld;
+  tr,
   room: TMRoom;
+  i,
+  sum: integer;
 begin
   inherited;
 
@@ -986,7 +989,15 @@ begin
   begin
     FTaskExec.ExecuteTask(ttCurRoomWork);
 
-    if room.FieldsExecuteCount(true, true, 0, Now + 10 * OneMinute) = 0 then
+    sum := 0;
+    for i := 0 to world.GetRoomCount - 1 do
+    begin
+      tr := world.GetRoom(i);
+      if tr <> nil then
+        sum := sum + tr.FieldsExecuteCount(true, true, 0, Now + 5 * OneMinute);
+    end;
+
+    if sum = 0 then
     begin
       FTaskExec.ExecuteTask(ttFriendHelp);
       exit;
@@ -1340,9 +1351,6 @@ begin
       else
        break;  // nothing to send
     end;
-
-    if length(world.AvailGift) > 0 then
-      AddLog('remains ' + IntToStr(length(world.AvailGift)) + ' gifts!!!', 0);
   end;
 end;
 
@@ -1367,27 +1375,67 @@ end;
 procedure TMTaskFriendHelp.IntExecute;
 var
   StartDT: TDateTime;
-  world: TMWorld;
+  world,
+  FriendWorld: TMWorld;
+  RoomID: integer;
+  room: TMRoom;
   i: integer;
+  OwnerID,
+  LastFriend: int64;
+  HelpCount: integer;
 begin
   inherited;
+  HelpCount := 0;
 
   world := TMWorld.GetInstance;
   if (world = nil) or (not world.Valid) then exit;
 
+  FriendWorld := TMWorld.Create;
+  OwnerID := StrToIntDef(FMPServ.OwnerID, 0);
+
   FQu.Clear;
   FQu.CurrentXP := world.LastHeader.Exp;
+  LastFriend := OwnerID;
+  FriendWorld.LastHeader := world.LastHeader;
   StartDT := Now;
 
-{  for i := 0 to length(world.Friends) - 1 do
-    if world.Friends[i].NeedHelp and
-       db.CanHelpFriend(world.Friends[i].id) then
+  for i := 0 to length(world.Friends) - 1 do
+    if (world.Friends[i].ID <> OwnerID) and
+       world.Friends[i].NeedHelp and
+       FDB.CanHelpFriend(world.Friends[i].ID) then
     begin
+      HelpCount := HelpCount + 1;
+      sleep(1000);
+      if not FMPServ.GetUserStatFriend(FriendWorld, 0, LastFriend, world.Friends[i].ID, FQu)
+      then continue;
 
-      world.Friends[i].NextVisitDT := Now + 1;
+      RoomID := 0;
+
+      // calc work here
+      FQu.Clear;
+      FQu.CurrentXP := FriendWorld.LastHeader.Exp;
+      room := FriendWorld.GetRoom(RoomID);
+      if room <> nil then
+        room.FieldsHelp(50, world.Friends[i].ID);
+
+      // work finished
+      world.Friends[i].DisableHelp;
+      FDB.UpdateFriendHelp(room.ID, world.Friends[i].ID, FQu.Count, Now);
+      FQu.Trunc(FriendWorld.LastHeader.HelpPoints);
+
+      LastFriend := world.Friends[i].ID;
+
       // only allowed 10 min of work time
       if StartDT + 10 * OneMinute < Now then break;
-    end;  }
+    end;
+
+  if HelpCount > 0 then
+    FMPServ.GetUserStatFriend(FriendWorld, 0, LastFriend, 0, FQu);
+
+  world.LastHeader := FriendWorld.LastHeader;
+  FriendWorld.Free;
+  AddLog('Friend help completed. Helped ' + IntToStr(HelpCount) +
+    ' friends from date ' + DateTimeToStr(StartDT) + '.');
 end;
 
 end.

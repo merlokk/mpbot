@@ -2,7 +2,7 @@ unit uQueue;
 
 interface
 uses
-  Classes, SysUtils, StrUtils, SyncObjs, DateUtils,
+  Classes, SysUtils, StrUtils, SyncObjs, DateUtils, Math,
   clHTTPRequest,
   uDefs;
 
@@ -28,7 +28,8 @@ type
     destructor Destroy; override;
 
     procedure Clear;
-    procedure AddAttr(AName, AValue: string);
+    procedure AddAttr(AName, AValue: string); overload;
+    procedure AddAttr(AName: string; AValue: int64); overload;
   end;
 
   TActionQueue = class
@@ -47,6 +48,7 @@ type
 
      procedure Clear;
      function Add(ARoomID: integer; AID: int64; ALogName: string; AType: TFieldAction; ADeltaXP: integer = 0): TActionQueueElm;
+     procedure Trunc(cnt: integer);
      function Count: integer;
      procedure FillFormData(vHttpRequest: TclHttpRequest);
 
@@ -219,6 +221,18 @@ begin
   end;
 end;
 
+procedure TActionQueue.Trunc(cnt: integer);
+var
+  i: integer;
+begin
+  for i := cnt to length(FQuElm) - 1 do
+  try
+    FQuElm[i].Free;
+  except
+  end;
+  SetLength(FQuElm, min(cnt, length(FQuElm)));
+end;
+
 { TActionQueueElm }
 
 procedure TActionQueueElm.AddAttr(AName, AValue: string);
@@ -226,6 +240,11 @@ begin
   SetLength(Attrs, length(Attrs) + 1);
   Attrs[Length(Attrs) - 1].Name := AName;
   Attrs[Length(Attrs) - 1].Value := AValue;
+end;
+
+procedure TActionQueueElm.AddAttr(AName: string; AValue: int64);
+begin
+  AddAttr(AName, IntToStr(AValue));
 end;
 
 procedure TActionQueueElm.Clear;

@@ -61,7 +61,7 @@ type
     function FriendsUpdate(friends: TFriendRecArray): boolean;
     procedure FillGameFriends(lst: string);
     function FillGameFriendsFromDB: boolean;
-//    procedure SetFriendNextHelp(FriendID: int64; Date: TDateTime);
+    procedure UpdateFriendHelp(RoomID: integer; FriendID: int64; HelpCount: integer; Date: TDateTime);
     function CanHelpFriend(FriendID: int64): boolean;
     function AddFriendActivityPoints(FriendID: int64): boolean;
     function GetGroupedAppFriends(var GroupNum: integer; GroupCount: integer): string;
@@ -877,18 +877,19 @@ begin
     AddLog('MakeGifts execution exception', 0);
   end;
 end;
-{
 
-procedure TMPdatabase.SetFriendNextHelp(FriendID: int64; Date: TDateTime);
+procedure TMPdatabase.UpdateFriendHelp(RoomID: integer; FriendID: int64; HelpCount: integer; Date: TDateTime);
 begin
   if not Connected then exit;
 
-  FIBQuery.SQL.Text := 'update friends set NEXT_HELP_DT = ''' +
-    FormatDateTime('DD.MM.YYYY', Date) + ''' where ID=' + IntToStr(FriendID);
+  FIBQuery.SQL.Text := 'update or insert into friends_help (FRIENDS_ID, ROOM_ID, HELP_COUNT, HELP_DT) values (' +
+    IntToStr(FriendID) + ',' + IntToStr(RoomID) + ',' +
+    IntToStr(HelpCount) + ',' +
+    '''' + FormatDateTime('DD.MM.YYYY HH:NN:SS', Date) + ''') matching(FRIENDS_ID, ROOM_ID)';
   FIBQuery.ExecQuery;
   Commit;
 end;
-}
+
 procedure TMPdatabase.SubtractReward(gift: TSendGiftRec; SubKoef: extended);
 var
  rew: extended;

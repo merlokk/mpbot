@@ -59,6 +59,7 @@ type
 
     function SrvGetUserStatFirst(RoomID: integer): String;
     function SrvGetUserStat(RoomID: integer; data: string): String;
+    function SrvGetUserStatFriend(RoomID: integer; OwnerID, FriendId: int64; Qu: TActionQueue): String;
     function SrvCheckAndPerform(Qu: TActionQueue): String;
     function SrvCheckReqResult(data: string): boolean;
   public
@@ -72,7 +73,7 @@ type
     function LoadFile(URL, FileName: string): integer;
     function GotRevisionTime: cardinal;
     function GetUserStat(World: TMWorld; RoomID: integer; StartNewSession: boolean = false): boolean;
-    function GetUserStatFriend(OwnerID, FriendId: int64; data: String): String;
+    function GetUserStatFriend(World: TMWorld; RoomID: integer; OwnerID, FriendId: int64; Qu: TActionQueue): boolean;
     function CheckAndPerform(World: TMWorld; Qu: TActionQueue): boolean;
 
     property OwnerID: string read FOwnerID write FOwnerID;
@@ -216,7 +217,7 @@ begin
   clHttpRequest.Header.AcceptEncoding := 'gzip,deflate,sdch';
   clHttpRequest.Header.AcceptCharSet := 'windows-1251,utf-8;q=0.7,*;q=0.3';
   clHttpRequest.Header.AcceptLanguage := 'ru-RU,ru;q=0.8,en-US;q=0.6,en;q=0.4';
-  clHttpRequest.Header.Referer := 'http://cs305104.vkontakte.ru/u6148904/ef16d2ea6d5e19.zip';
+  clHttpRequest.Header.Referer := 'http://cs4318.vkontakte.ru/u6148904/a10620e995cb5d.zip';
   clHttpRequest.Header.UserAgent := 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.79 Safari/535.11';
 
   clHttpRequest2 := TclHttpRequest.Create(Nil);
@@ -339,7 +340,7 @@ begin
     frn := frn + 1;
 
     SendPost(
-      'http://88.212.222.164/city_server_vk_prod/check_and_perform?uid=' + FOwnerID +
+      FServerURL + 'check_and_perform?uid=' + FOwnerID +
       '&crev=' + FRevision + '&fp=' + FVerFP + '&rn=' + IntToStr(Frn),
       clHttpRequest2, Fres);
     Result := Fres.Text;
@@ -528,11 +529,35 @@ begin
   end;
 end;
 
-function TMPServer.GetUserStatFriend(OwnerID, FriendId: int64; data: String): String;
+function TMPServer.GetUserStatFriend(World: TMWorld; RoomID: integer; OwnerID, FriendId: int64;
+  Qu: TActionQueue): boolean;
+var
+  data: string;
 begin
-//  FTimerms := GetTickCount;
-//  FTimerms := FTimerms + 1500 + Trunc(Random(1000));
+  Result := false;
+  try
+    if FSessionKey = '' then exit;
 
+    data := SrvGetUserStatFriend(RoomID, OwnerID, FriendId, Qu);
+    SrvCheckReqResult(data);  // add message to log
+    if data = '' then exit;
+
+    World.LoadFromXML(FCurrRoomID, data);
+    FSessionKey := World.LastHeader.SessionKey;
+
+    World.CheckRoomInformation(World.LastHeader.OwnerRoomInformation);
+    World.LastRoomChange := Now;
+
+    Result := true;
+    AddLog('server_time=' + IntToStr(World.LastHeader.ServerTime) +
+      ' q: ' + Qu.StrStat +
+      ' session_key=' + World.LastHeader.SessionKey, 4);
+  except
+  end;
+end;
+
+function TMPServer.SrvGetUserStatFriend(RoomID: integer; OwnerID, FriendId: int64; Qu: TActionQueue): String;
+begin
   clHttpRequest2.Assign(clHttpRequest);
   clHttpRequest2.AddFormField('client_performance_stats', '{"first_request":380.784}');
   clHttpRequest2.AddFormField('avg_mem', GetBaseRandomStr(197341184, 100000));
@@ -543,6 +568,13 @@ begin
   clHttpRequest2.AddFormField('avg_fps', GetBaseRandomStr(10, 5));
   clHttpRequest2.AddFormField('serv_ver', IntToStr(FServerVer));
   clHttpRequest2.AddFormField('auth_key', FAuthKey);
+
+  if FCurrRoomID <> RoomID then
+  begin
+    clHttpRequest2.AddFormField('view_room_id', IntToStr(RoomID));
+    clHttpRequest2.AddFormField('change_room', 'true');
+    FCurrRoomID := RoomID;
+  end;
 
   if FriendId <> 0 then
     clHttpRequest2.AddFormField('view_friend_id', IntToStr(FriendId));
@@ -557,17 +589,22 @@ begin
   clHttpRequest2.AddFormField('revision', FRevision);
   clHttpRequest2.AddFormField('rand', GetRandomStr);
 
-  FillFormData(clHttpRequest2, data);
+  Qu.FillFormData(clHttpRequest2);
 
   frn := frn + 1;
 
   SendPost(
-    'http://88.212.222.164/city_server_vk_prod/get_user_stat?uid=56895991&crev=' +
+    FServerURL + 'get_user_stat?uid=' + FOwnerID + '&crev=' +
     FRevision + '&fp=' + FVerFP + '&rn=' + IntToStr(Frn),
     clHttpRequest2,
     Fres);
 
   Result := Fres.Text;
+  AddLog('server exec get_user_stat friend. room=' + IntToStr(RoomID) +
+    ' owner/friend=' + IntToStr(OwnerID) + '/' + IntToStr(FriendId) +
+    '. rn=' + IntToStr(frn) +
+    '. res len=' + IntToStr(length(Result)));
+  AddLogFile('!server', 'get_user_stat_friend.xml', Fres);
 end;
 
 function TMPServer.GotRevisionTime: cardinal;
@@ -793,9 +830,11 @@ begin
   Clear;
   if root = nil then exit;
   try
+    // owner from server
     OwnerID := VarToInt64Def(root.Attributes['owner_id'], 0);
     if OwnerID <= 0 then exit;
 
+    // my world
     NextTick := VarToIntDef(root.Attributes['next_tick'], 0);
     WishListStr := VarToStr(root.Attributes['wish_list']);
     Population := VarToIntDef(root.Attributes['population'], 0);
@@ -816,6 +855,12 @@ begin
     ResourceOptions := VarToStr(root.Attributes['resource_options']);
     RespectLevel := VarToIntDef(root.Attributes['respect_level'], 0);
 
+    // friend world
+    HelpPoints := VarToIntDef(root.Attributes['help_points'], 0);
+    NotPlayDays := VarToIntDef(root.Attributes['not_play_days'], 100);
+    OwnerRoomInformation := VarToStr(root.Attributes['owner_room_info']);
+
+    // calc fields
     PopulationMultiplier :=  1 - tax * 7 / 1500;
     ProcessRoomResources(RoomsResources, root);
 
@@ -914,11 +959,13 @@ begin
     WishList := VarToStr(node.Attributes['wish_list']);
     HelpItems := VarToStr(node.Attributes['help_items']);
     RoomInfo := VarToStr(node.Attributes['owner_room_info']);
+    Requests := VarToStr(node.Attributes['requests']);
+    SendRequests := VarToStr(node.Attributes['send_requests']);
     HaveGift := VarToBoolDef(node.Attributes['have_gift'], false);
 
     HelpPointsCnt := VarToIntDef(node.Attributes['help_points'], 0);
 
-    // in seconds
+    // next_visit_time_end in seconds
     if VarIsNull(node.Attributes['next_visit_time_end']) then
       NextVisitDT := 0
     else
