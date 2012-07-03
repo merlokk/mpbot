@@ -1412,8 +1412,6 @@ begin
       if not FMPServ.GetUserStatFriend(FriendWorld, RoomID, LastFriend, world.Friends[i].ID, FQu)
       then continue;
 
-      RoomID := 0;
-
       // calc work here
       FQu.Clear;
       FQu.CurrentXP := FriendWorld.LastHeader.Exp;
