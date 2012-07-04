@@ -3,7 +3,7 @@ unit uTasks;
 interface
 uses
   SysUtils, Variants, Types, Classes, IOUtils, Forms, XMLIntf, XMLDoc, StrUtils,
-  Windows, DateUtils, ShellAPI, pFIBQuery,
+  Windows, DateUtils, ShellAPI, pFIBQuery, Math,
   uMPserv, uVK, uDB, uGameItems, uLogger, uQueue, uFactories,
   uCalc, uDefs;
 
@@ -92,6 +92,8 @@ type
   end;
 
   TMTaskWorkDispatcher = class (TMTask)
+  private
+  public
     constructor Create; override;
     procedure IntExecute; override;
   end;
@@ -129,6 +131,9 @@ type
   end;
 
   TMTaskFriendHelp = class (TMTask)
+  private
+    FLastFriendHelp: TDateTime;
+  public
     constructor Create; override;
     procedure IntExecute; override;
   end;
@@ -996,10 +1001,10 @@ begin
     begin
       tr := world.GetRoom(i);
       if tr <> nil then
-        sum := sum + tr.FieldsExecuteCount(true, true, 0, Now + 5 * OneMinute);
+        sum := sum + tr.FieldsExecuteCount(true, true, 0, Now + 7 * OneMinute);
     end;
 
-    if sum = 0 then
+    if sum < 3 then
     begin
       FTaskExec.ExecuteTask(ttFriendHelp);
       exit;
@@ -1372,6 +1377,7 @@ constructor TMTaskFriendHelp.Create;
 begin
   inherited;
   SetTaskType(ttFriendHelp);
+  FLastFriendHelp := 0;
 end;
 
 procedure TMTaskFriendHelp.IntExecute;
@@ -1387,6 +1393,8 @@ var
   HelpCount: integer;
 begin
   inherited;
+  // once per 10 minutes
+  if FLastFriendHelp + 10 * OneMinute > Now then exit;
   HelpCount := 0;
 
   world := TMWorld.GetInstance;
@@ -1401,30 +1409,33 @@ begin
   FriendWorld.LastHeader := world.LastHeader;
   StartDT := Now;
 
-  RoomID := 0;
-  for i := 0 to length(world.Friends) - 1 do
+  for i := 0 to length(world.Friends) - 1 do          // friends
     if (world.Friends[i].ID <> OwnerID) and
-       world.Friends[i].NeedHelp and
-       FDB.CanHelpFriend(RoomID, world.Friends[i].ID) then
+       world.Friends[i].NeedHelp then
     begin
-      HelpCount := HelpCount + 1;
-      sleep(1000);
-      if not FMPServ.GetUserStatFriend(FriendWorld, RoomID, LastFriend, world.Friends[i].ID, FQu)
-      then continue;
+      for RoomID := 0 to world.GetRoomCount - 1 do        // rooms
+        if FDB.CanHelpFriend(RoomID, world.Friends[i].ID) then
+        begin
+          HelpCount := HelpCount + 1;
+          sleep(2000);
+          if not FMPServ.GetUserStatFriend(FriendWorld, RoomID, LastFriend, world.Friends[i].ID, FQu)
+          then continue;
 
-      // calc work here
-      FQu.Clear;
-      FQu.CurrentXP := FriendWorld.LastHeader.Exp;
-      room := FriendWorld.GetRoom(RoomID);
-      if room <> nil then
-        room.FieldsHelp(50, world.Friends[i].ID);
+          // calc work here
+          FQu.Clear;
+          FQu.CurrentXP := FriendWorld.LastHeader.Exp;
+          room := FriendWorld.GetRoom(RoomID);
+          if room <> nil then
+            room.FieldsHelp(50, world.Friends[i].ID);
 
-      // work finished
-      world.Friends[i].DisableHelp;
-      FDB.UpdateFriendHelp(room.ID, world.Friends[i].ID, FQu.Count, Now);
-      FQu.Trunc(FriendWorld.LastHeader.HelpPoints);
+          // work finished
+          world.Friends[i].DisableHelp;
+          FDB.UpdateFriendHelp(room.ID, world.Friends[i].ID, FQu.Count, Now);
+          FQu.Trunc(FriendWorld.LastHeader.HelpPoints);
 
-      LastFriend := world.Friends[i].ID;
+          LastFriend := world.Friends[i].ID;
+          FriendWorld.Clear;
+        end;
 
       // only allowed 10 min of work time
       if StartDT + 10 * OneMinute < Now then break;
@@ -1437,6 +1448,8 @@ begin
   FriendWorld.Free;
   AddLog('Friend help completed. Helped ' + IntToStr(HelpCount) +
     ' friends from date ' + DateTimeToStr(StartDT) + '.');
+
+  FLastFriendHelp := Now;
 end;
 
 end.

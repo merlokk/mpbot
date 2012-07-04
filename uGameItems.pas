@@ -1747,13 +1747,26 @@ begin
 
   if NewState = STATE_ABANDONED then
   begin
+    ContractOutput := ContractInput;
+    ContractInput := '';
+    OutputFill := InputFill;
+    InputFill := '';
+
     State := STATE_ABANDONED;
   end;
 
   if NewState = STATE_WORK then
   begin
     if PutGameItem <> nil then
+    begin
       ContractOutput := IntToStr(PutGameItem.ID);
+      ProcessEnd := PutGameItem.GetAttr('stage_length').AsInteger;
+      if ProcessEnd = 0 then
+        ProcessEnd := 1 * 60 * 60 * 1000;
+    end
+    else
+      ProcessEnd := 1 * 60 * 60 * 1000;  // 1 hour - default
+    LastUpdate := Now;
 
     State := STATE_WORK;
   end;
@@ -1797,10 +1810,6 @@ begin
     begin
       elm := Qu.Add(Room.ID, ID, Name, faTick);
       elm.ActionDT := GetProcessEndDT;
-      ContractOutput := ContractInput;
-      ContractInput := '';
-      OutputFill := InputFill;
-      InputFill := '';
 
       ChangeState(STATE_ABANDONED);
     end;
