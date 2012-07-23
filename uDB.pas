@@ -943,6 +943,8 @@ begin
         trim(FIBQueryCurs.FieldByName('HELP_SLOTS_LINK').AsString);
       FExecContractList[length(FExecContractList) - 1].HelpMsg :=
         trim(FIBQueryCurs.FieldByName('HELP_MSG').AsString);
+      FExecContractList[length(FExecContractList) - 1].TacticID :=
+        FIBQueryCurs.FieldByName('TACTIC_ID').AsInteger;
 
       FIBQueryCurs.Next;
     end;

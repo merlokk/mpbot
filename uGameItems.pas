@@ -69,6 +69,7 @@ type
     function GetRadius: integer;
     function GetWidth: integer;
     function GetcanHelp: boolean;
+    function GetAllStates: string;
   public
     constructor Create;
     procedure Clear;
@@ -85,6 +86,9 @@ type
     property SuperClass: string read FSuperClass write FSuperClass;
     property RusName: string read FRusName write FRusName;
 
+    function GetAllStatesParam(Operation, ItemName: string; ParamName: string = 'min_quantity'): string;
+    function GetAllStatesParamInt(Operation, ItemName: string; ParamName: string = 'min_quantity'): integer;
+
     property canPick: boolean read GetcanPick;
     property canClean: boolean read  GetcanClean;
     property canPut: boolean read  GetcanPut;
@@ -98,6 +102,7 @@ type
     property Height: integer read GetHeight;
     property Width: integer read GetWidth;
     property Radius: integer read GetRadius;
+    property AllStates: string read GetAllStates;
   end;
 
   TGiftRec = packed record
@@ -282,7 +287,8 @@ type
     procedure Clear;
 
     function StartFieldsUpdate: cardinal;
-    function GetField(AID: int64): TMField;
+    function GetField(AID: int64): TMField; overload;
+    function GetField(LeftPartOfName: string): TMField; overload;
     function GetFieldI(indx: integer): TMField;
     function GetFieldIndxByPos(x, y: integer): integer;
     procedure AddField(field: TMField);
@@ -358,7 +364,7 @@ type
   end;
 
 implementation
-uses uDB, uFactories;
+uses uDB, uFactories, uTactic;
 
 { TMGameItem }
 
@@ -400,6 +406,65 @@ begin
   indx := GetAttrIndx(id);
   if indx < 0 then exit;
   Result := FAttr[indx];
+end;
+
+function TMGameItem.GetAllStates: string;
+begin
+  Result := GetAttr('all_states').AsString;
+end;
+
+function TMGameItem.GetAllStatesParam(Operation, ItemName,
+  ParamName: string): string;
+var
+  i: integer;
+  vAllStates: string;
+  itemObj,
+  itemsObj,
+  operObj,
+  dropObj,
+  obj: ISuperObject;
+begin
+  Result := '';
+  try
+    vAllStates := AllStates;
+    obj := TSuperObject.ParseString(PWideChar(vAllStates), false);
+    if obj = nil then exit;
+
+    dropObj := nil;
+    for i := 0 to obj.AsArray.Length - 1 do
+    begin
+      dropObj := obj.AsArray.O[i].AsObject['drop'];
+      if dropObj <> nil then break;
+    end;
+    if (dropObj = nil) or (dropObj.AsObject = nil) then exit;
+    operObj := dropObj.O[Operation];
+    if (operObj = nil) or (operObj.AsArray = nil) then exit;
+
+    itemsObj := nil;
+    for i := 0 to operObj.AsArray.Length - 1 do
+    begin
+      itemsObj := operObj.AsArray.O[i].AsObject['items'];
+      if itemsObj <> nil then break;
+    end;
+    if (itemsObj = nil) or (itemsObj.AsArray = nil) then exit;
+
+    itemObj := nil;
+    for i := 0 to itemsObj.AsArray.Length - 1 do
+    begin
+      itemObj := itemsObj.AsArray.O[i].AsObject[ItemName];
+      if itemObj <> nil then break;
+    end;
+    if (itemObj = nil) or (itemObj.AsObject = nil) then exit;
+
+    Result := itemObj.O[ParamName].AsString;
+  except
+  end;
+end;
+
+function TMGameItem.GetAllStatesParamInt(Operation, ItemName,
+  ParamName: string): integer;
+begin
+  Result := StrToIntDef(GetAllStatesParam(Operation, ItemName, ParamName), 0);
 end;
 
 function TMGameItem.GetAttr(name: string): TAttr;
@@ -1168,6 +1233,19 @@ begin
   Result := nil;
   for i := 0 to length(FItems) - 1 do
     if FItems[i].ID = AID then
+    begin
+      Result := FItems[i];
+      break;
+    end;
+end;
+
+function TMRoom.GetField(LeftPartOfName: string): TMField;
+var
+  i: Integer;
+begin
+  Result := nil;
+  for i := 0 to length(FItems) - 1 do
+    if Pos(LeftPartOfName, FItems[i].Name) = 1 then
     begin
       Result := FItems[i];
       break;

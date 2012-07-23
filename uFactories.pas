@@ -6,7 +6,7 @@ uses
   clHttpRequest, clGZip, clCookies, clConnection, clMultiDC, clSingleDC,
   clDownLoader, clTcpClient, clHttp,  Dialogs, StdCtrls, XMLIntf, XMLDoc,
   StrUtils,
-  uDB, uDefs, uGameItems, uLogger;
+  uDB, uDefs, uGameItems, uLogger, uTactic;
 
 type
   TItemsFactory = class
@@ -42,6 +42,21 @@ type
     destructor Destroy; override;
 
     function GetField(name: string): TMField;
+  end;
+
+  TTacticFactory = class
+  protected
+    class var FInstance: TTacticFactory;
+    class constructor ClassCreate;
+  private
+    FDB: TMPdatabase;
+
+  public
+    class function GetInstance: TTacticFactory; static;
+    constructor Create; virtual;
+    destructor Destroy; override;
+
+    function GetTactic(id: integer): TMTactic;
   end;
 
 implementation
@@ -172,6 +187,43 @@ begin
   if not Assigned(FInstance) then
     FInstance := TFieldsFactory.Create;
   Result := FInstance;
+end;
+
+{ TTacticFactory }
+
+class constructor TTacticFactory.ClassCreate;
+begin
+  FInstance := nil;
+end;
+
+constructor TTacticFactory.Create;
+begin
+  inherited;
+
+  FDB := TMPdatabase.GetInstance;
+end;
+
+destructor TTacticFactory.Destroy;
+begin
+
+  inherited;
+end;
+
+class function TTacticFactory.GetInstance: TTacticFactory;
+begin
+  if not Assigned(FInstance) then
+    FInstance := TTacticFactory.Create;
+  Result := FInstance;
+end;
+
+function TTacticFactory.GetTactic(id: integer): TMTactic;
+begin
+  case id of
+    1: Result := TMRoom1Tactic.Create;
+    2: Result := TMRoom2Tactic.Create;
+  else
+    Result := TMTactic.Create;
+  end;
 end;
 
 end.

@@ -14,7 +14,8 @@ uses
   uFactories in 'uFactories.pas',
   superobject in 'JSON\superobject.pas',
   uQueue in 'uQueue.pas',
-  uCalc in 'uCalc.pas';
+  uCalc in 'uCalc.pas',
+  uTactic in 'uTactic.pas';
 
 {$R *.res}
 

@@ -349,7 +349,7 @@ begin
       ' room=' + IntToStr(FCurrRoomID) +
       '. rn=' + IntToStr(frn) +
       '. res len=' + IntToStr(length(Result)));
-    AddLogFile('!server', 'check_and_perform.xml', Fres);
+    AddLogFile('!server', 'check_and_perform' + IntToStr(FCurrRoomID) + '.xml', Fres);
   except
   end;
 end;
@@ -453,7 +453,7 @@ begin
   AddLog('server exec get_user_stat next. room=' + IntToStr(RoomID) +
     '. rn=' + IntToStr(frn) +
     '. res len=' + IntToStr(length(Result)));
-  AddLogFile('!server', 'get_user_statN.xml', Fres);
+  AddLogFile('!server', 'get_user_statN' + IntToStr(RoomID) + '.xml', Fres);
 end;
 
 function TMPServer.SrvGetUserStatFirst(RoomID: integer): String;
@@ -498,7 +498,7 @@ begin
   AddLog('server exec get_user_stat first. room=' + IntToStr(RoomID) +
     '. rn=' + IntToStr(frn) +
     '. res len=' + IntToStr(length(Result)));
-  AddLogFile('!server', 'get_user_statF.xml', Fres);
+  AddLogFile('!server', 'get_user_statF' + IntToStr(RoomID) + '.xml', Fres);
 end;
 
 function TMPServer.GetUserStat(World: TMWorld; RoomID: integer; StartNewSession: boolean): boolean;
@@ -604,7 +604,7 @@ begin
     ' owner/friend=' + IntToStr(OwnerID) + '/' + IntToStr(FriendId) +
     '. rn=' + IntToStr(frn) +
     '. res len=' + IntToStr(length(Result)));
-  AddLogFile('!server', 'get_user_stat_friend.xml', Fres);
+  AddLogFile('!server', 'get_user_stat_friend' + IntToStr(RoomID) + '.xml', Fres);
 end;
 
 function TMPServer.GotRevisionTime: cardinal;

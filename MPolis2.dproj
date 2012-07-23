@@ -64,6 +64,7 @@
 			<DCCReference Include="JSON\superobject.pas"/>
 			<DCCReference Include="uQueue.pas"/>
 			<DCCReference Include="uCalc.pas"/>
+			<DCCReference Include="uTactic.pas"/>
 			<BuildConfiguration Include="Release">
 				<Key>Cfg_2</Key>
 				<CfgParent>Base</CfgParent>

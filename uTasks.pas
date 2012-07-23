@@ -796,6 +796,10 @@ begin
     if length(world.AvailGift) > 0 then
       FTaskExec.ExecuteTask(ttProcessGifts);
   end;
+
+  // place for testing
+  TTacticFactory.GetInstance.GetTactic(1).CanExecuteContract(
+    TItemsFactory.GetInstance.GetGameItem(16111));
 end;
 
 { TMTaskLoadSWF }

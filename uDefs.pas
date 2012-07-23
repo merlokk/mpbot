@@ -68,6 +68,7 @@ type
     HelpName,
     HelpSlotsLink,
     HelpMsg: string;
+    TacticID: integer;
 
     procedure Clear;
   end;
@@ -240,6 +241,7 @@ begin
   HelpName := '';
   HelpSlotsLink := '';
   HelpMsg := '';
+  TacticID := 0;
 end;
 
 procedure TFriendRec.DisableHelp;
