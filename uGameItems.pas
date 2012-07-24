@@ -79,6 +79,8 @@ type
     function GetAttrI(indx: integer): TAttr;
     function GetAttr(id: integer): TAttr; overload;
     function GetAttr(name: string): TAttr; overload;
+    function SetAttr(id: integer; value: Variant): boolean; overload;
+    function SetAttr(name: string; value: Variant): boolean; overload;
 
     property ID: integer read FID write FID;
     property Name: string read FName write FName;
@@ -594,6 +596,28 @@ end;
 function TMGameItem.GetWidth: integer;
 begin
   Result := GetAttr('width').AsInteger;
+end;
+
+function TMGameItem.SetAttr(id: integer; value: Variant): boolean;
+var
+  indx: integer;
+begin
+  Result := false;
+  indx := GetAttrIndx(id);
+  if indx < 0 then exit;
+  FAttr[indx].Value := value;
+  Result := true;
+end;
+
+function TMGameItem.SetAttr(name: string; value: Variant): boolean;
+var
+  indx: integer;
+begin
+  Result := false;
+  indx := GetAttrIndx(name);
+  if indx < 0 then exit;
+  FAttr[indx].Value := value;
+  Result := true;
 end;
 
 function TMGameItem.GetAttrIndx(id: integer): integer;
