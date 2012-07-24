@@ -798,8 +798,8 @@ begin
   end;
 
   // place for testing
-  TTacticFactory.GetInstance.GetTactic(1).CanExecuteContract(
-    TItemsFactory.GetInstance.GetGameItem(16111));
+//  TTacticFactory.GetInstance.GetTactic(1).CanExecuteContract(
+//    TItemsFactory.GetInstance.GetGameItem(16111));
 end;
 
 { TMTaskLoadSWF }
@@ -910,10 +910,10 @@ begin
 
   // ---- room work
   // work items more then 30  or
-  // work items more then tick items in 60 seconds * 3
+  // work items more then tick items in 120 seconds * 3
   cnt := room.FieldsExecuteCount(false, true, 0, Now - 10 * OneSecond);
   if ((cnt > 30) or
-      (cnt > 3 * room.FieldsExecuteCount(true, false, 0, Now + 60 * OneSecond))
+      (cnt > 3 * room.FieldsExecuteCount(true, false, Now, Now + 120 * OneSecond))
      )
   then
   begin

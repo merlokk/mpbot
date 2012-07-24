@@ -1012,17 +1012,23 @@ begin
         TItemsFactory.GetInstance.GetGameItem(inum);
     isDeny := TMPdatabase.GetInstance.FieldIsDeny(Name);
 
-    if Self is TMFieldFactory then
+    if Self is TMFieldFactory then // TODO: REFACTORING
       with TMFieldFactory(Self) do
       begin
         PutKlass := TMPdatabase.GetInstance.GetExecContract(Name).Klass;
         PutGameItem := TItemsFactory.GetInstance.GetGameItem(PutKlass);
+
+        if TMPdatabase.GetInstance.GetExecContract(Name).TacticID <> 0 then
+          Tactic := TTacticFactory.GetInstance.GetTactic(TMPdatabase.GetInstance.GetExecContract(Name).TacticID);
       end;
 
     if Self is TMFieldFactoryWithHelp then
       with TMFieldFactoryWithHelp(Self) do
       begin
         ExecContract := TMPdatabase.GetInstance.GetExecContract(Name);
+        PutGameItem := TItemsFactory.GetInstance.GetGameItem(ExecContract.Klass);
+        if ExecContract.TacticID <> 0 then
+          TMFieldFactory(Result).Tactic := TTacticFactory.GetInstance.GetTactic(ExecContract.TacticID);
       end;
 
     LastUpdate := Now;

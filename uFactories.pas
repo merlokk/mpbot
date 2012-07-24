@@ -169,6 +169,7 @@ begin
     gitFactory:
       begin
         ExecContract := TMPdatabase.GetInstance.GetExecContract(Name);
+
         if ExecContract.HelpName <> '' then
           Result := TMFieldFactoryWithHelp.Create;
 

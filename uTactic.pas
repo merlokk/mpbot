@@ -15,28 +15,39 @@ type
 
     procedure Clear; virtual;
 
-    function CanExecuteContract(Contract: TMGameItem): boolean; virtual;
+    function CanExecuteContract(Field: TMField; Contract: TMGameItem): boolean; virtual;
+    function CanPickContract(Field: TMField; Contract: TMGameItem): boolean; virtual;
   end;
 
   TMRoom1Tactic = class (TMTactic)
   private
+    FWorld: TMWorld;
+    FRoom: TMRoom;
+
+    function CheckResourcesCapacity(Contract: TMGameItem): boolean;
   public
-    function CanExecuteContract(Contract: TMGameItem): boolean; override;
+    function CanExecuteContract(Field: TMField; Contract: TMGameItem): boolean; override;
+    function CanPickContract(Field: TMField; Contract: TMGameItem): boolean; override;
   end;
 
   TMRoom2Tactic = class (TMTactic)
   private
   public
-    function CanExecuteContract(Contract: TMGameItem): boolean; override;
+    function CanExecuteContract(Field: TMField; Contract: TMGameItem): boolean; override;
   end;
 
 implementation
 
 { TMTactic }
 
-function TMTactic.CanExecuteContract(Contract: TMGameItem): boolean;
+function TMTactic.CanExecuteContract(Field: TMField; Contract: TMGameItem): boolean;
 begin
-  Result := false;
+  Result := true;
+end;
+
+function TMTactic.CanPickContract(Field: TMField; Contract: TMGameItem): boolean;
+begin
+  Result := true;
 end;
 
 procedure TMTactic.Clear;
@@ -59,24 +70,51 @@ end;
 
 { TMRoom1Tactic }
 
-function TMRoom1Tactic.CanExecuteContract(Contract: TMGameItem): boolean;
+function TMRoom1Tactic.CanExecuteContract(Field: TMField; Contract: TMGameItem): boolean;
 var
-  world: TMWorld;
-  room: TMRoom;
+  FuelNeeded: integer;
+begin
+  Result := false;
+  if Contract = nil then exit;
+
+  FWorld := TMWorld.GetInstance;
+  FRoom := FWorld.GetRoom(1);
+  if (FRoom = nil) or (not FRoom.Avaliable) then exit;
+
+  if not CheckResourcesCapacity(Contract) then exit;
+
+  // нужно топлива для контракта
+  FuelNeeded := Contract.GetAllStatesParamInt(
+      'put',
+      'fuel') * -1; // was < 0 !!!
+  if FuelNeeded > StrToIntDef(FRoom.Header.GetRoomResource('fuel'), 0) then exit;
+
+  Result := true;
+end;
+
+function TMRoom1Tactic.CanPickContract(Field: TMField; Contract: TMGameItem): boolean;
+begin
+  Result := false;
+  if Contract = nil then exit;
+
+  FWorld := TMWorld.GetInstance;
+  FRoom := FWorld.GetRoom(1);
+  if (FRoom = nil) or (not FRoom.Avaliable) then exit;
+
+  Result := CheckResourcesCapacity(Contract);
+end;
+
+function TMRoom1Tactic.CheckResourcesCapacity(Contract: TMGameItem): boolean;
+var
   ResourcesCapacity,
   ResourcesCount,
-  ResourcesNeeded,
-  FuelNeeded: integer;
+  ResourcesNeeded: integer;
   StorageField: TMField;
 begin
-  Result := inherited;
-
-  world := TMWorld.GetInstance;
-  room := world.GetRoom(1);
-  if (room = nil) or (not room.Avaliable) then exit;
+  Result := false;
 
   // размер склада
-  StorageField := room.GetField('mining_storage');
+  StorageField := FRoom.GetField('mining_storage');
   if (StorageField = nil) or (StorageField.GameItem = nil) then exit;
   ResourcesCapacity := StorageField.GameItem.GetAllStatesParamInt(
       'create',
@@ -84,7 +122,8 @@ begin
   if ResourcesCapacity <= 0 then exit;
 
   // количество ресурсов на складе
-  ResourcesCount := world.GetBarnCount(16150); // iron_ore
+  ResourcesCount :=
+    FWorld.GetBarnCount(16150); // iron_ore
 
   // количество ресурсов появится после исполнения контракта
   ResourcesNeeded := Contract.GetAllStatesParamInt(
@@ -92,20 +131,17 @@ begin
       'mining_resources_capacity'); // was < 0 !!!
   if ResourcesCapacity - ResourcesCount + ResourcesNeeded < 0 then exit;
 
-  // нужно топлива для контракта
-  FuelNeeded := Contract.GetAllStatesParamInt(
-      'put',
-      'fuel') * -1; // was < 0 !!!
-  if FuelNeeded > StrToIntDef(room.Header.GetRoomResource('fuel'), 0) then exit;
-
   Result := true;
 end;
 
 { TMRoom2Tactic }
 
-function TMRoom2Tactic.CanExecuteContract(Contract: TMGameItem): boolean;
+function TMRoom2Tactic.CanExecuteContract(Field: TMField; Contract: TMGameItem): boolean;
 begin
-  Result := inherited;
+  Result := false;
+
+
+
 
 end;
 

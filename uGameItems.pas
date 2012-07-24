@@ -180,6 +180,7 @@ type
 
   TMFieldFactory = class (TMField)
   public
+    Tactic: TObject;
     PutKlass: string;
     PutGameItem: TMGameItem;
 
@@ -1868,6 +1869,7 @@ begin
   inherited;
   PutKlass := '';
   PutGameItem := nil;
+  Tactic := nil;
 end;
 
 procedure TMFieldFactory.Execute(canTick, canWork: boolean);
@@ -1899,7 +1901,8 @@ begin
     if (State = STATE_ABANDONED) and
        ((ContractOutput <> '') or
         (OutputFill <> '')) and
-       (GameItem.canPick)
+       (GameItem.canPick) and
+       ((Tactic = nil) or (TMTactic(Tactic).CanPickContract(Self, PutGameItem)))
     then
     begin   // moneyout+ xp+
       xp := 2;
@@ -1913,7 +1916,8 @@ begin
 
     if (State = STATE_STANDBY) and
        (GameItem.canPut) and
-       (PutKlass <> '')
+       (PutKlass <> '') and
+       ((Tactic = nil) or (TMTactic(Tactic).CanExecuteContract(Self, PutGameItem)))
     then
     begin // moneyin-
       elm := Qu.Add(Room.ID, ID, Name, faPut, 0);
@@ -1958,12 +1962,15 @@ begin
     Result := GetProcessEndDT;
 
   if canWork and
-     (State = STATE_ABANDONED) and
-     ((ContractOutput <> '') or
-      (OutputFill <> '')
+     ( (State = STATE_ABANDONED) and
+       ((ContractOutput <> '') or
+        (OutputFill <> '')
+       ) and
+       ((Tactic = nil) or (TMTactic(Tactic).CanPickContract(Self, PutGameItem)))
      ) or
-     ((State = STATE_STANDBY) and
-       (PutKlass <> '')
+     ( (State = STATE_STANDBY) and
+       (PutKlass <> '') and
+       ((Tactic = nil) or (TMTactic(Tactic).CanExecuteContract(Self, PutGameItem)))
      ) or
      (State = STATE_DIRTY) or
      (State = STATE_EXPIRED)
