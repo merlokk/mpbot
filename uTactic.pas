@@ -197,9 +197,9 @@ begin
         'vip_tourists') * -1; // was < 0 !!!
 
     if (Toãrists + StrToIntDef(FRoom.Header.GetRoomResource('tourists'), 0) >
-            StrToIntDef(FRoom.Header.GetRoomResource('max_tourists'), 0)) or
+            StrToIntDef(FRoom.Header.GetRoomResource('max_tourists'), 0) + 20) or
        (ToãristsVIP + StrToIntDef(FRoom.Header.GetRoomResource('vip_tourists'), 0) >
-            StrToIntDef(FRoom.Header.GetRoomResource('max_vip_tourists'), 0))
+            StrToIntDef(FRoom.Header.GetRoomResource('max_vip_tourists'), 0) + 20)
     then exit;
 
     exp := Contract.GetAllStatesParamInt(
