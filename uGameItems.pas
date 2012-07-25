@@ -269,6 +269,9 @@ type
     function GetPopulation: int64;
     function GetFreePopulation: int64;
     function GetRoomResource(name: string): string;
+    function SetRoomResource(name: string; value: string): boolean;
+    function IncRoomResource(name: string; value: integer): boolean;
+    function DecRoomResource(name: string; value: integer): boolean;
     function GetVisitorsCount(FieldID: int64): integer;
   end;
 
@@ -1060,6 +1063,11 @@ begin
   LastTick := 0;
 end;
 
+function TWorldHeader.DecRoomResource(name: string; value: integer): boolean;
+begin
+  Result := IncRoomResource(name, 0 - value);
+end;
+
 function TWorldHeader.GetFreePopulation: int64;
 begin
   Result := GetMaxPopulation - GetPopulation;
@@ -1100,6 +1108,32 @@ begin
   except
     Result := 0;
   end;
+end;
+
+function TWorldHeader.IncRoomResource(name: string; value: integer): boolean;
+var
+  val: string;
+  vali: integer;
+begin
+  Result := false;
+  val := GetRoomResource(name);
+  if not TryStrToInt(val, vali) then exit;
+
+  Result := SetRoomResource(name, IntToStr(vali + value));
+end;
+
+function TWorldHeader.SetRoomResource(name, value: string): boolean;
+var
+  i: Integer;
+begin
+  Result := false;
+  for i := 0 to length(RoomResourcesArray) - 1 do
+    if RoomResourcesArray[i].Name = name then
+    begin
+      RoomResourcesArray[i].Value := value;
+      Result := true;
+      break;
+    end;
 end;
 
 { TMRoom }
@@ -1940,18 +1974,38 @@ begin
 
     if (State = STATE_STANDBY) and
        (GameItem.canPut) and
-       (PutKlass <> '') and
-       ((Tactic = nil) or (TMTactic(Tactic).CanExecuteContract(Self, PutGameItem)))
+       (PutKlass <> '')
     then
     begin // moneyin-
-      elm := Qu.Add(Room.ID, ID, Name, faPut, 0);
-      elm.AddAttr('klass', PutKlass);
 
-{???
-    FClFields[length(FClFields) - 1].Affected :=
-      CalcFactoryAffecting(st, st.fields[i]);
-??? }
-      ChangeState(STATE_WORK);
+      //  select contract from list
+      if (Tactic <> nil) and (Pos(',', PutKlass) > 0) then
+      begin
+        PutGameItem := TMTactic(Tactic).SelectContract(Self, PutKlass);
+      end;
+
+      // check contract
+      if ((Tactic = nil) or (TMTactic(Tactic).CanExecuteContract(Self, PutGameItem))) then
+      begin
+        if PutGameItem <> nil then
+        begin
+          if Tactic <> nil then TMTactic(Tactic).ExecuteContract(Self, PutGameItem);
+
+          elm := Qu.Add(Room.ID, ID, Name, faPut, 0);
+          elm.AddAttr('klass', PutGameItem.Name);
+        end
+        else
+        begin
+          elm := Qu.Add(Room.ID, ID, Name, faPut, 0);
+          elm.AddAttr('klass', PutKlass);
+        end;
+
+  {???  сотовая связь
+      FClFields[length(FClFields) - 1].Affected :=
+        CalcFactoryAffecting(st, st.fields[i]);
+  ??? }
+        ChangeState(STATE_WORK);
+      end;
     end;
 
     // Expired

@@ -17,30 +17,34 @@ type
 
     procedure Clear; virtual;
 
-    function CanExecuteContract(Field: TMField; Contract: TMGameItem): boolean; virtual;
+    function CanExecuteContract(Field: TMField; Contract: TMGameItem; Exec: boolean = false): boolean; virtual;
+    function ExecuteContract(Field: TMField; Contract: TMGameItem): boolean; virtual;
     function CanPickContract(Field: TMField; Contract: TMGameItem): boolean; virtual;
+    function SelectContract(Field: TMField; ContractList: string): TMGameItem; virtual;
   end;
 
   TMRoom1Tactic = class (TMTactic)
   private
     function CheckResourcesCapacity(Contract: TMGameItem): boolean;
   public
-    function CanExecuteContract(Field: TMField; Contract: TMGameItem): boolean; override;
+    function CanExecuteContract(Field: TMField; Contract: TMGameItem; Exec: boolean = false): boolean; override;
     function CanPickContract(Field: TMField; Contract: TMGameItem): boolean; override;
   end;
 
   TMRoom2Tactic = class (TMTactic)
   private
   public
-    function CanExecuteContract(Field: TMField; Contract: TMGameItem): boolean; override;
+    function CanExecuteContract(Field: TMField; Contract: TMGameItem; Exec: boolean = false): boolean; override;
     function CanPickContract(Field: TMField; Contract: TMGameItem): boolean; override;
   end;
 
 implementation
+uses
+  uFactories;
 
 { TMTactic }
 
-function TMTactic.CanExecuteContract(Field: TMField; Contract: TMGameItem): boolean;
+function TMTactic.CanExecuteContract(Field: TMField; Contract: TMGameItem; Exec: boolean = false): boolean;
 begin
   Result := true;
 end;
@@ -70,9 +74,27 @@ begin
   inherited
 end;
 
+function TMTactic.ExecuteContract(Field: TMField;
+  Contract: TMGameItem): boolean;
+begin
+  Result := CanExecuteContract(Field, Contract, true);
+end;
+
+function TMTactic.SelectContract(Field: TMField;
+  ContractList: string): TMGameItem;
+begin
+  Result := nil;
+  if ContractList = '' then exit;
+
+  if Pos(',', ContractList) > 0 then
+   TItemsFactory.GetInstance.GetGameItem(Copy(ContractList, 1, Pos(',', ContractList) - 1))
+  else
+   TItemsFactory.GetInstance.GetGameItem(ContractList);
+end;
+
 { TMRoom1Tactic }
 
-function TMRoom1Tactic.CanExecuteContract(Field: TMField; Contract: TMGameItem): boolean;
+function TMRoom1Tactic.CanExecuteContract(Field: TMField; Contract: TMGameItem; Exec: boolean = false): boolean;
 var
   FuelNeeded: integer;
 begin
@@ -90,6 +112,11 @@ begin
       'put',
       'fuel') * -1; // was < 0 !!!
   if FuelNeeded > StrToIntDef(FRoom.Header.GetRoomResource('fuel'), 0) then exit;
+
+  if Exec then
+  begin
+    FRoom.Header.DecRoomResource('fuel', FuelNeeded);
+  end;
 
   Result := true;
 end;
@@ -138,8 +165,10 @@ end;
 
 { TMRoom2Tactic }
 
-function TMRoom2Tactic.CanExecuteContract(Field: TMField; Contract: TMGameItem): boolean;
+function TMRoom2Tactic.CanExecuteContract(Field: TMField; Contract: TMGameItem; Exec: boolean = false): boolean;
 var
+  Toгrists,
+  ToгristsVIP,
   ToгristsNeeded,
   ToгristsVIPNeeded: integer;
 begin
@@ -165,6 +194,35 @@ begin
     if (ToгristsNeeded > StrToIntDef(FRoom.Header.GetRoomResource('tourists'), 0)) or
        (ToгristsVIPNeeded > StrToIntDef(FRoom.Header.GetRoomResource('vip_tourists'), 0))
     then exit;
+
+    if Exec then
+    begin
+      FRoom.Header.DecRoomResource('tourists', ToгristsNeeded);
+      FRoom.Header.DecRoomResource('vip_tourists', ToгristsVIPNeeded);
+    end;
+  end;
+
+  // приходная часть бюджета
+  if (Pos('marine_terminal_', Field.Name) = 1) or
+     (Pos('island_airport_', Field.Name) = 1) then
+  begin
+    // проверить будет ли к тому времени как закончится контракт такое количество пустых мест
+    Contract.GetAttr('stage_length').AsInteger;
+
+
+    // заглушка - проверка на текущий момент
+    Toгrists := Contract.GetAllStatesParamInt(
+        'pick',
+        'tourists');
+    ToгristsVIP := Contract.GetAllStatesParamInt(
+        'pick',
+        'vip_tourists');
+
+    if (Toгrists + StrToIntDef(FRoom.Header.GetRoomResource('tourists'), 0) >
+            StrToIntDef(FRoom.Header.GetRoomResource('tourist_capacity'), 0) + 20) or
+       (ToгristsVIP + StrToIntDef(FRoom.Header.GetRoomResource('vip_tourists'), 0) >
+            StrToIntDef(FRoom.Header.GetRoomResource('vip_tourist_capacity'), 0) + 20)
+    then exit;
   end;
 
   Result := true;
@@ -188,18 +246,18 @@ begin
   if (Pos('marine_terminal_', Field.Name) = 1) or
      (Pos('island_airport_', Field.Name) = 1) then
   begin
-    // нужно туристов для контракта
+    // контракт сделает туристов
     Toгrists := Contract.GetAllStatesParamInt(
         'pick',
-        'tourists') * -1; // was < 0 !!!
+        'tourists');
     ToгristsVIP := Contract.GetAllStatesParamInt(
         'pick',
-        'vip_tourists') * -1; // was < 0 !!!
+        'vip_tourists');
 
     if (Toгrists + StrToIntDef(FRoom.Header.GetRoomResource('tourists'), 0) >
-            StrToIntDef(FRoom.Header.GetRoomResource('max_tourists'), 0) + 20) or
+            StrToIntDef(FRoom.Header.GetRoomResource('tourist_capacity'), 0) + 20) or
        (ToгristsVIP + StrToIntDef(FRoom.Header.GetRoomResource('vip_tourists'), 0) >
-            StrToIntDef(FRoom.Header.GetRoomResource('max_vip_tourists'), 0) + 20)
+            StrToIntDef(FRoom.Header.GetRoomResource('vip_tourist_capacity'), 0) + 20)
     then exit;
 
     exp := Contract.GetAllStatesParamInt(
