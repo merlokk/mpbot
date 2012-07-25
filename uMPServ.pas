@@ -217,8 +217,8 @@ begin
   clHttpRequest.Header.AcceptEncoding := 'gzip,deflate,sdch';
   clHttpRequest.Header.AcceptCharSet := 'windows-1251,utf-8;q=0.7,*;q=0.3';
   clHttpRequest.Header.AcceptLanguage := 'ru-RU,ru;q=0.8,en-US;q=0.6,en;q=0.4';
-  clHttpRequest.Header.Referer := 'http://cs4318.vkontakte.ru/u6148904/a10620e995cb5d.zip';
-  clHttpRequest.Header.UserAgent := 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.79 Safari/535.11';
+  clHttpRequest.Header.Referer := 'http://cs6151.vkontakte.ru/u6148904/2432d91261070e.zip';
+  clHttpRequest.Header.UserAgent := 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/536.11 (KHTML, like Gecko) Chrome/20.0.1132.57 Safari/536.11';
 
   clHttpRequest2 := TclHttpRequest.Create(Nil);
   clHttpRequest2.BatchSize := 32769;

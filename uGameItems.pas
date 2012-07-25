@@ -355,7 +355,12 @@ type
     function CanGift(uid: int64): boolean;
     function GetNextGift(var gift: TSendGiftRec): boolean;
     function GetAvailGiftCount(GameItemID: cardinal): integer;
+
+    function GetBarnGameItemID(GameItemName: string): cardinal;
     function GetBarnCount(GameItemID: cardinal): integer;
+    function SetBarnCount(GameItemID: cardinal; count: integer): boolean;
+    function IncBarnRes(GameItemID: cardinal; value: integer): boolean;
+    function DecBarnRes(GameItemID: cardinal; value: integer): boolean;
 
     function StrGiftStat: String;
     function StrXPStat: string;
@@ -855,6 +860,11 @@ begin
   Clear;
 end;
 
+function TMWorld.DecBarnRes(GameItemID: cardinal; value: integer): boolean;
+begin
+  Result := IncBarnRes(GameItemID, 0 - value);
+end;
+
 destructor TMWorld.Destroy;
 begin
   Clear;
@@ -884,6 +894,21 @@ begin
   for i := 0 to length(barn) - 1 do
     if (Barn[i].id = GameItemID) then
       Result := Result + Barn[i].Qty;
+end;
+
+function TMWorld.GetBarnGameItemID(GameItemName: string): cardinal;
+var
+ i: integer;
+begin
+  Result := 0;
+  if not valid then exit;
+
+  for i := 0 to length(barn) - 1 do
+    if (Barn[i].Name = GameItemName) then
+    begin
+      Result := Barn[i].ID;
+      break;
+    end;
 end;
 
 function TMWorld.GetNextGift(var gift: TSendGiftRec): boolean;
@@ -966,6 +991,11 @@ begin
   Result := Copy(FSWFRevision, length(FSWFRevision) - 18, 19);
 end;
 
+function TMWorld.IncBarnRes(GameItemID: cardinal; value: integer): boolean;
+begin
+  Result := SetBarnCount(GameItemID, GetBarnCount(GameItemID) + value);
+end;
+
 function TMWorld.MakeGift(gift: TSendGiftRec): boolean;
 var
  i,
@@ -995,6 +1025,22 @@ begin
 
       Result := true;
       break;
+    end;
+end;
+
+function TMWorld.SetBarnCount(GameItemID: cardinal; count: integer): boolean;
+var
+ i: integer;
+begin
+  Result := false;
+  if not valid then exit;
+
+  for i := 0 to length(barn) - 1 do
+    if (Barn[i].id = GameItemID) then
+    begin
+      Barn[i].Qty := count;
+      Result := true;
+      exit;
     end;
 end;
 
@@ -1963,6 +2009,8 @@ begin
        ((Tactic = nil) or (TMTactic(Tactic).CanPickContract(Self, PutGameItem)))
     then
     begin   // moneyout+ xp+
+      if Tactic <> nil then TMTactic(Tactic).PickContract(Self, PutGameItem);
+
       xp := 2;
       if FContractOutputItem <> nil then
         xp := FContractOutputItem.GetAttr('exp').AsInteger;

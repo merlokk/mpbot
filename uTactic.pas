@@ -19,7 +19,8 @@ type
 
     function CanExecuteContract(Field: TMField; Contract: TMGameItem; Exec: boolean = false): boolean; virtual;
     function ExecuteContract(Field: TMField; Contract: TMGameItem): boolean; virtual;
-    function CanPickContract(Field: TMField; Contract: TMGameItem): boolean; virtual;
+    function CanPickContract(Field: TMField; Contract: TMGameItem; Exec: boolean = false): boolean; virtual;
+    function PickContract(Field: TMField; Contract: TMGameItem): boolean; virtual;
     function SelectContract(Field: TMField; ContractList: string): TMGameItem; virtual;
   end;
 
@@ -28,14 +29,14 @@ type
     function CheckResourcesCapacity(Contract: TMGameItem): boolean;
   public
     function CanExecuteContract(Field: TMField; Contract: TMGameItem; Exec: boolean = false): boolean; override;
-    function CanPickContract(Field: TMField; Contract: TMGameItem): boolean; override;
+    function CanPickContract(Field: TMField; Contract: TMGameItem; Exec: boolean = false): boolean; override;
   end;
 
   TMRoom2Tactic = class (TMTactic)
   private
   public
     function CanExecuteContract(Field: TMField; Contract: TMGameItem; Exec: boolean = false): boolean; override;
-    function CanPickContract(Field: TMField; Contract: TMGameItem): boolean; override;
+    function CanPickContract(Field: TMField; Contract: TMGameItem; Exec: boolean = false): boolean; override;
   end;
 
 implementation
@@ -49,7 +50,7 @@ begin
   Result := true;
 end;
 
-function TMTactic.CanPickContract(Field: TMField; Contract: TMGameItem): boolean;
+function TMTactic.CanPickContract(Field: TMField; Contract: TMGameItem; Exec: boolean = false): boolean;
 begin
   Result := true;
 end;
@@ -80,6 +81,11 @@ begin
   Result := CanExecuteContract(Field, Contract, true);
 end;
 
+function TMTactic.PickContract(Field: TMField; Contract: TMGameItem): boolean;
+begin
+  CanPickContract(Field, Contract, true);
+end;
+
 function TMTactic.SelectContract(Field: TMField;
   ContractList: string): TMGameItem;
 begin
@@ -96,7 +102,8 @@ end;
 
 function TMRoom1Tactic.CanExecuteContract(Field: TMField; Contract: TMGameItem; Exec: boolean = false): boolean;
 var
-  FuelNeeded: integer;
+  FuelNeeded,
+  IncResCnt: integer;
 begin
   Result := false;
   if Contract = nil then exit;
@@ -121,7 +128,10 @@ begin
   Result := true;
 end;
 
-function TMRoom1Tactic.CanPickContract(Field: TMField; Contract: TMGameItem): boolean;
+function TMRoom1Tactic.CanPickContract(Field: TMField; Contract: TMGameItem; Exec: boolean = false): boolean;
+var
+  ProduceMaterial: string;
+  IncResCnt: integer;
 begin
   Result := false;
   if Contract = nil then exit;
@@ -131,6 +141,18 @@ begin
   if (FRoom = nil) or (not FRoom.Avaliable) then exit;
 
   Result := CheckResourcesCapacity(Contract);
+
+  if Exec then
+  begin
+    ProduceMaterial := Contract.GetAttr('produce_material').AsString;
+    if ProduceMaterial <> '' then
+    begin
+      IncResCnt := Contract.GetAllStatesParamInt(
+        'pick',
+        ProduceMaterial);
+      FWorld.IncBarnRes(FWorld.GetBarnGameItemID(ProduceMaterial), IncResCnt)
+    end;
+  end;
 end;
 
 function TMRoom1Tactic.CheckResourcesCapacity(Contract: TMGameItem): boolean;
@@ -152,7 +174,7 @@ begin
 
   // êîëè÷åñòâî ðåñóðñîâ íà ñêëàäå
   ResourcesCount :=
-    FWorld.GetBarnCount(16150); // iron_ore
+    FWorld.GetBarnCount(FWorld.GetBarnGameItemID(Contract.GetAttr('produce_material').AsString));
 
   // êîëè÷åñòâî ðåñóðñîâ ïîÿâèòñÿ ïîñëå èñïîëíåíèÿ êîíòðàêòà
   ResourcesNeeded := Contract.GetAllStatesParamInt(
@@ -229,7 +251,7 @@ begin
 end;
 
 function TMRoom2Tactic.CanPickContract(Field: TMField;
-  Contract: TMGameItem): boolean;
+  Contract: TMGameItem; Exec: boolean = false): boolean;
 var
   Toãrists,
   ToãristsVIP,
@@ -260,10 +282,16 @@ begin
             StrToIntDef(FRoom.Header.GetRoomResource('vip_tourist_capacity'), 0) + 20)
     then exit;
 
-    exp := Contract.GetAllStatesParamInt(
-        'pick',
-        'exp');
-    if exp > 1 then Contract.SetAttr('exp', exp);
+    if Exec then
+    begin
+      FRoom.Header.IncRoomResource('tourists', Toãrists);
+      FRoom.Header.IncRoomResource('vip_tourists', ToãristsVIP);
+
+      exp := Contract.GetAllStatesParamInt(
+          'pick',
+          'exp');
+      if exp > 1 then Contract.SetAttr('exp', exp);
+    end;
   end;
 
   Result := true;
