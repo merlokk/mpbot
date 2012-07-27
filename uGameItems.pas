@@ -160,6 +160,7 @@ type
     procedure Clear; virtual;
 
     function GetProcessEndDT: TDateTime;
+    function GetIterationsCount(ToDT: TDateTime; GuardIntervalSec: integer): integer;
     function GetActionDT(canTick, canWork: boolean): TDateTime; virtual;
     function inAreaOf(it: TMField): boolean;
 
@@ -222,6 +223,19 @@ type
     constructor Create; override;
     procedure Clear; override;
     procedure Execute(canTick, canWork: boolean); override;
+  end;
+
+  TMFieldMiningStorage = class (TMField)
+  private
+    FMiningItems: TNameValArr;
+    function GetCapacity: integer;
+    function GetResourcesCount: integer;
+  public
+    constructor Create; override;
+    procedure Execute(canTick, canWork: boolean); override;
+
+    property Capacity: integer read GetCapacity;
+    property ResourcesCount: integer read GetResourcesCount;
   end;
 
   TBarnRec = packed record
@@ -1567,6 +1581,23 @@ begin
     Result := GameItem.GetItemType;
 end;
 
+function TMField.GetIterationsCount(ToDT: TDateTime;
+  GuardIntervalSec: integer): integer;
+var
+  ProcessLength,
+  ProcessEnd: TDateTime;
+begin
+  Result := 0;
+  ProcessEnd := GetProcessEndDT;
+  if (ProcessEnd > ToDT) or (GameItem = nil) then exit;
+
+  ProcessLength := GameItem.GetAttr('stage_length').AsInteger * OneSecond;
+  if ProcessLength < OneSecond then exit;  // ==0
+
+  Result := trunc(ToDT - ProcessEnd / (ProcessLength + GuardIntervalSec * OneSecond)) + 1;
+  if Result < 0 then Result := 0;
+end;
+
 function TMField.GetProcessEndDT: TDateTime;
 begin
   if ProcessEnd <> 0 then
@@ -2178,6 +2209,63 @@ begin
       end;
     end;
   end;
+end;
+
+{ TMFieldMiningStorage }
+
+constructor TMFieldMiningStorage.Create;
+begin
+  inherited;
+
+  FMiningItems := TMPdatabase.GetInstance.GetMiningItems;
+end;
+
+procedure TMFieldMiningStorage.Execute(canTick, canWork: boolean);
+var
+  ItemID,
+  cnt,
+  i: Integer;
+begin
+  inherited;
+
+  if canWork then
+  begin
+    for i := 0 to length(FMiningItems) - 1 do
+    begin
+      ItemID := FRoom.FWorld.GetBarnGameItemID(FMiningItems[i].Name);
+      if ItemID = 0 then continue;
+
+      cnt := FRoom.FWorld.GetBarnCount(ItemID);
+      if cnt > FMiningItems[i].Value then
+      begin
+        //  count items to sell
+        cnt := cnt - FMiningItems[i].Value;
+
+
+//        FRoom.FWorld.DecBarnRes(ItemID, cnt);
+      end;
+    end;
+  end;
+end;
+
+function TMFieldMiningStorage.GetCapacity: integer;
+begin
+  if GameItem = nil then
+    Result := 0
+  else
+    Result := GameItem.GetAllStatesParamInt(
+      'create',
+      'mining_resources_capacity');
+end;
+
+function TMFieldMiningStorage.GetResourcesCount: integer;
+var
+  i: Integer;
+begin
+  Result := 0;
+  for i := 0 to length(FMiningItems) - 1 do
+    Result := Result +
+      FRoom.FWorld.GetBarnCount(FRoom.FWorld.GetBarnGameItemID(FMiningItems[i].Name));
 end;
 
 end.

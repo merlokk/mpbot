@@ -164,16 +164,22 @@ begin
     exit;
   end;
 
+  if Pos('mining_storage', name) = 1 then
+  begin
+    Result := TMFieldMiningStorage.Create;
+    exit;
+  end;
+
   case item.ItemType of
     gitPlace: Result := TMFieldPlace.Create;
     gitFactory:
       begin
         ExecContract := TMPdatabase.GetInstance.GetExecContract(Name);
 
-        if ExecContract.HelpName <> '' then
+        if (Result = nil) and (ExecContract.HelpName <> '') then
           Result := TMFieldFactoryWithHelp.Create;
 
-        if Result = nil then
+        if (Result = nil) then
           Result := TMFieldFactory.Create;
       end;
     gitBuilding: Result := TMFieldBuilding.Create;

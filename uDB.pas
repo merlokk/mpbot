@@ -91,6 +91,8 @@ type
     function ClearGameItemsDB: boolean;
     function AddGameItem(item: TMGameItem): boolean;
 
+    function GetMiningItems:TNameValArr;
+
 //    function GetItemWorkXP(field: FieldRec): integer;
 //    function GetContractXP(contractclass: string): integer;
 
@@ -547,6 +549,13 @@ begin
   except
     SetLength(Result, 0);
   end;
+end;
+
+function TMPdatabase.GetMiningItems: TNameValArr;
+begin
+  SetLength(Result, 1);
+  Result[0].Name := 'iron_ore';
+  Result[0].Value := 30;
 end;
 
 function TMPdatabase.GetGameItem(id: integer): TMGameItem;

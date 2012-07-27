@@ -34,6 +34,7 @@ type
 
   TMRoom2Tactic = class (TMTactic)
   private
+    function GetFutureResourcesCount(ResName, ResMaxName: string; ToDT: TDateTime): integer;
   public
     function CanExecuteContract(Field: TMField; Contract: TMGameItem; Exec: boolean = false): boolean; override;
     function CanPickContract(Field: TMField; Contract: TMGameItem; Exec: boolean = false): boolean; override;
@@ -83,7 +84,7 @@ end;
 
 function TMTactic.PickContract(Field: TMField; Contract: TMGameItem): boolean;
 begin
-  CanPickContract(Field, Contract, true);
+  Result := CanPickContract(Field, Contract, true);
 end;
 
 function TMTactic.SelectContract(Field: TMField;
@@ -93,17 +94,16 @@ begin
   if ContractList = '' then exit;
 
   if Pos(',', ContractList) > 0 then
-   TItemsFactory.GetInstance.GetGameItem(Copy(ContractList, 1, Pos(',', ContractList) - 1))
+   Result := TItemsFactory.GetInstance.GetGameItem(Copy(ContractList, 1, Pos(',', ContractList) - 1))
   else
-   TItemsFactory.GetInstance.GetGameItem(ContractList);
+   Result := TItemsFactory.GetInstance.GetGameItem(ContractList);
 end;
 
 { TMRoom1Tactic }
 
 function TMRoom1Tactic.CanExecuteContract(Field: TMField; Contract: TMGameItem; Exec: boolean = false): boolean;
 var
-  FuelNeeded,
-  IncResCnt: integer;
+  FuelNeeded: integer;
 begin
   Result := false;
   if Contract = nil then exit;
@@ -166,15 +166,15 @@ begin
 
   // размер склада
   StorageField := FRoom.GetField('mining_storage');
-  if (StorageField = nil) or (StorageField.GameItem = nil) then exit;
-  ResourcesCapacity := StorageField.GameItem.GetAllStatesParamInt(
-      'create',
-      'mining_resources_capacity');
+  if (StorageField = nil) or
+     (StorageField.GameItem = nil) or
+     (not (StorageField is TMFieldMiningStorage)) then exit;
+
+  ResourcesCapacity := (StorageField as TMFieldMiningStorage).Capacity;
   if ResourcesCapacity <= 0 then exit;
 
   // количество ресурсов на складе
-  ResourcesCount :=
-    FWorld.GetBarnCount(FWorld.GetBarnGameItemID(Contract.GetAttr('produce_material').AsString));
+  ResourcesCount := (StorageField as TMFieldMiningStorage).ResourcesCount;
 
   // количество ресурсов появится после исполнения контракта
   ResourcesNeeded := Contract.GetAllStatesParamInt(
@@ -229,7 +229,7 @@ begin
      (Pos('island_airport_', Field.Name) = 1) then
   begin
     // проверить будет ли к тому времени как закончится контракт такое количество пустых мест
-    Contract.GetAttr('stage_length').AsInteger;
+//    Field.GetIterationsCount;
 
 
     // заглушка - проверка на текущий момент
@@ -296,5 +296,82 @@ begin
 
   Result := true;
 end;
+
+function TMRoom2Tactic.GetFutureResourcesCount(ResName, ResMaxName: string;
+  ToDT: TDateTime): integer;
+var
+  field: TMField;
+  ResCount,
+  ResMax,
+  ResSub,
+  ResAdd: integer;
+begin
+  ResCount := StrToIntDef(FRoom.Header.GetRoomResource(ResName), 0);
+  ResMax := StrToIntDef(FRoom.Header.GetRoomResource(ResMaxName), 0);
+
+  Result := ResCount;
+  // расходная часть бюджета
+  field := FRoom.GetField('aquapark_');
+  if (field is TMFieldFactory) and
+     ((field as TMFieldFactory).PutGameItem <> nil)  // может тут вставить contractoutput?
+  then
+  begin
+    ResSub := (field as TMFieldFactory).PutGameItem.GetAllStatesParamInt(
+        'put',
+        ResName);   // <0
+    ResAdd := (field as TMFieldFactory).PutGameItem.GetAllStatesParamInt(
+        'pick',
+        ResName);
+
+    Result := Result + field.GetIterationsCount(ToDT, 60) * (ResSub + ResAdd);
+  end;
+
+  if (ResMax > 0) and (Result > ResMax) then Result := ResMax;
+
+
+end;
+       {
+
+  if (Pos('aquapark_', Field.Name) = 1) or
+     (Pos('ancient_fort_', Field.Name) = 1)then
+  begin
+    ResSub := Contract.GetAllStatesParamInt(
+        'put',
+        ResName) * -1;
+    ResAdd := Contract.GetAllStatesParamInt(
+        'pick',
+        ResName);
+
+    then exit;
+
+    if Exec then
+    begin
+      FRoom.Header.DecRoomResource('tourists', ToгristsNeeded);
+      FRoom.Header.DecRoomResource('vip_tourists', ToгristsVIPNeeded);
+    end;
+  end;
+
+  // приходная часть бюджета
+  if (Pos('marine_terminal_', Field.Name) = 1) or
+     (Pos('island_airport_', Field.Name) = 1) then
+  begin
+    // проверить будет ли к тому времени как закончится контракт такое количество пустых мест
+//    Field.GetIterationsCount;
+
+
+    // заглушка - проверка на текущий момент
+    Toгrists := Contract.GetAllStatesParamInt(
+        'pick',
+        'tourists');
+    ToгristsVIP := Contract.GetAllStatesParamInt(
+        'pick',
+        'vip_tourists');
+
+    if (Toгrists + StrToIntDef(FRoom.Header.GetRoomResource('tourists'), 0) >
+            StrToIntDef(FRoom.Header.GetRoomResource('tourist_capacity'), 0) + 20) or
+       (ToгristsVIP + StrToIntDef(FRoom.Header.GetRoomResource('vip_tourists'), 0) >
+            StrToIntDef(FRoom.Header.GetRoomResource('vip_tourist_capacity'), 0) + 20)
+
+end;      }
 
 end.
