@@ -553,9 +553,13 @@ end;
 
 function TMPdatabase.GetMiningItems: TNameValArr;
 begin
-  SetLength(Result, 1);
+  SetLength(Result, 3);
   Result[0].Name := 'iron_ore';
   Result[0].Value := 30;
+  Result[1].Name := 'bauxite';
+  Result[1].Value := 10;
+  Result[2].Name := 'coal';
+  Result[2].Value := 30;
 end;
 
 function TMPdatabase.GetGameItem(id: integer): TMGameItem;

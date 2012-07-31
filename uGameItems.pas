@@ -227,11 +227,16 @@ type
 
   TMFieldMiningStorage = class (TMField)
   private
+    ExecContract: TExecContractRec;
+    FNextFuelHelpReq: TDateTime;
+    FLastFriendGroup: integer;
+
     FMiningItems: TNameValArr;
     function GetCapacity: integer;
     function GetResourcesCount: integer;
   public
     constructor Create; override;
+    function GetActionDT(canTick, canWork: boolean): TDateTime; override;
     procedure Execute(canTick, canWork: boolean); override;
 
     property Capacity: integer read GetCapacity;
@@ -263,6 +268,7 @@ type
     ServerTime: int64;
     ResourceOptions,
     SessionKey: String;
+    NextLimitedRequest: integer;
     Auto: cardinal;
     Exp: int64;
     RoomID,
@@ -279,6 +285,7 @@ type
     LastTick: cardinal;
 
     procedure Clear;
+    function GetNextLimReqDT: TDateTime;
     function GetMaxPopulation: int64;
     function GetPopulation: int64;
     function GetFreePopulation: int64;
@@ -1107,6 +1114,7 @@ begin
   ServerTime := 0;
   ResourceOptions := '';
   SessionKey := '';
+  NextLimitedRequest := 0;
   Auto := 0;
   Exp := 0;
   RoomID := -1;
@@ -1136,6 +1144,14 @@ end;
 function TWorldHeader.GetMaxPopulation: int64;
 begin
   Result := int64(Trunc(MaxPopulation * PopulationMultiplier));
+end;
+
+function TWorldHeader.GetNextLimReqDT: TDateTime;
+begin
+  if NextLimitedRequest = 0 then
+    Result := 0
+  else
+    Result := Now + ((int64(LastTick) - int64(GetTickCount) + NextLimitedRequest) / 1000) * OneSecond;
 end;
 
 function TWorldHeader.GetPopulation: int64;
@@ -2218,6 +2234,9 @@ begin
   inherited;
 
   FMiningItems := TMPdatabase.GetInstance.GetMiningItems;
+  ExecContract := TMPdatabase.GetInstance.GetExecContract('mining_storage');
+  FNextFuelHelpReq := 0;
+  FLastFriendGroup := 0;
 end;
 
 procedure TMFieldMiningStorage.Execute(canTick, canWork: boolean);
@@ -2225,11 +2244,16 @@ var
   ItemID,
   cnt,
   i: Integer;
+  elm: TActionQueueElm;
 begin
   inherited;
 
+  //  it works only for room 1
+  if FRoom.ID <> 1 then exit;
+
   if canWork then
   begin
+    // sell items from mining storage
     for i := 0 to length(FMiningItems) - 1 do
     begin
       ItemID := FRoom.FWorld.GetBarnGameItemID(FMiningItems[i].Name);
@@ -2241,10 +2265,50 @@ begin
         //  count items to sell
         cnt := cnt - FMiningItems[i].Value;
 
+        elm := Qu.Add(Room.ID, ItemID, FMiningItems[i].Name, faSellBarn, 0);
+        elm.AddAttr('quantity', cnt);
 
-//        FRoom.FWorld.DecBarnRes(ItemID, cnt);
+        FRoom.FWorld.DecBarnRes(ItemID, cnt);
       end;
     end;
+
+    // get fuel help request
+    if (ExecContract.HelpName <> '') and
+       (FNextFuelHelpReq < Now) and
+       (StrToIntDef(FRoom.Header.GetRoomResource('fuel'), 0) < 20) then
+    begin
+      // if we cant request now
+      if FRoom.Header.GetNextLimReqDT > FNextFuelHelpReq then
+      begin
+        FNextFuelHelpReq := FRoom.Header.GetNextLimReqDT + 2 * OneMinute;
+      end
+      else
+      begin
+        elm := Qu.Add(Room.ID, 0, Name, faSendRequest, 0);
+        elm.AddAttr('name', ExecContract.HelpName);
+        elm.AddAttr('msg', ExecContract.HelpMsg);
+        elm.AddAttr('notify', TMPdatabase.GetInstance.GetGroupedAppFriends(FLastFriendGroup, 100));
+
+        FNextFuelHelpReq := Now + GetBaseRandom(100, 30) * OneMinute;
+      end;
+    end;
+
+  end;
+end;
+
+function TMFieldMiningStorage.GetActionDT(canTick, canWork: boolean): TDateTime;
+begin
+  Result := inherited;
+
+  if canWork and
+     (ExecContract.HelpName <> '') and
+     (StrToIntDef(FRoom.Header.GetRoomResource('fuel'), 0) < 20)
+  then
+  begin
+    if FNextFuelHelpReq < Now - 1 then
+      Result := Now - 1
+    else
+      Result := FNextFuelHelpReq;
   end;
 end;
 
@@ -2253,9 +2317,9 @@ begin
   if GameItem = nil then
     Result := 0
   else
-    Result := GameItem.GetAllStatesParamInt(
-      'create',
-      'mining_resources_capacity');
+    Result := 0 - GameItem.GetAllStatesParamInt(
+      'sell',  // 'create'
+      'bonus_mining_resources_capacity'); // mining_resources_capacity
 end;
 
 function TMFieldMiningStorage.GetResourcesCount: integer;

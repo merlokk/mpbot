@@ -846,6 +846,7 @@ begin
     Tax := VarToIntDef(root.Attributes['tax'], 0);
     ServerTime := VarToIntDef(root.Attributes['server_time'], 0);
     SessionKey := VarToStr(root.Attributes['session_key']);
+    NextLimitedRequest := VarToIntDef(root.Attributes['next_limited_request'], 0);
     Auto := VarToIntDef(root.Attributes['auto'], 0);
     Exp := VarToIntDef(root.Attributes['exp'], 0);
     RoomID := VarToIntDef(root.Attributes['room_id'], -1);

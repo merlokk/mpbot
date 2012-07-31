@@ -134,7 +134,8 @@ begin
       ago := (length(FQuElm) - i) * 2;
 
     AddCached(i, 'vsemogutor_hash', '0');
-    AddCached(i, 'item_id', IntToStr(FQuElm[i].ID));
+    if FQuElm[i].ID <> 0 then
+      AddCached(i, 'item_id', IntToStr(FQuElm[i].ID));
     AddCached(i, 'user_id', IntToStr(OwnerID));
     AddCached(i, 'room_id', IntToStr(FQuElm[i].RoomID));
     AddCached(i, 'ago', IntToStr(ago));

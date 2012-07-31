@@ -179,7 +179,7 @@ begin
   // количество ресурсов появится после исполнения контракта
   ResourcesNeeded := Contract.GetAllStatesParamInt(
       'pick',
-      'mining_resources_capacity'); // was < 0 !!!
+      'mining_resources_capacity'); // < 0 !!!
   if ResourcesCapacity - ResourcesCount + ResourcesNeeded < 0 then exit;
 
   Result := true;

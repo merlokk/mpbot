@@ -711,6 +711,7 @@ var
   room0: TMRoom;
   i: Integer;
   fr: TFriendRec;
+  elm: TActionQueueElm;
 begin
   inherited;
 
@@ -730,6 +731,10 @@ begin
     sleep(2000);
     FMPServ.GetUserStat(world, i);
   end;
+
+  elm := FQu.Add(room.ID, 0, 'confirm_friends', faConfirmFriendsIds);
+  elm.AddAttr('friends_ids', FVK.GetAppFriends);
+  FMPServ.CheckAndPerform(world, FQu);
 
   // update friends
   FVK.UpdateFriendsDetails(world.Friends);
@@ -1301,7 +1306,7 @@ begin
   // send gifts
   if length(world.AvailGift) > 0 then
   begin
-    AddLog('found ' + IntToStr(length(world.AvailGift)) + ' gifts tto send!!!', 0);
+    AddLog('found ' + IntToStr(length(world.AvailGift)) + ' gift types to send!!!', 0);
     for i := 1 to 5 do
     begin
       PckCount := 40 + random(20);
