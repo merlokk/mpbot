@@ -120,6 +120,16 @@ begin
       'fuel') * -1; // was < 0 !!!
   if FuelNeeded > StrToIntDef(FRoom.Header.GetRoomResource('fuel'), 0) then exit;
 
+  // стратегия
+  // если топлива больше половины - тратим на все
+  // если меньше - тратим только на то, что продается
+  // получается приход - 4 топлава в час, а расход углем и рудой 2,22 в час
+  // остальное пока в ручном режиме...  при такой стратегии не работает запрос топлива у друзей(
+  if (StrToIntDef(FRoom.Header.GetRoomResource('fuel'), 0) < 70) and
+     (Contract.GetAttr('produce_material') <> 'coal') and
+     (Contract.GetAttr('produce_material') <> 'iron_ore')
+  then exit;
+
   if Exec then
   begin
     FRoom.Header.DecRoomResource('fuel', FuelNeeded);

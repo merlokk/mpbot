@@ -2284,7 +2284,7 @@ begin
       end
       else
       begin
-        elm := Qu.Add(Room.ID, 0, Name, faSendRequest, 0);
+        elm := Qu.Add(Room.ID, 0, 'fuel_help', faSendRequest, 0);
         elm.AddAttr('name', ExecContract.HelpName);
         elm.AddAttr('msg', ExecContract.HelpMsg);
         elm.AddAttr('notify', TMPdatabase.GetInstance.GetGroupedAppFriends(FLastFriendGroup, 100));
