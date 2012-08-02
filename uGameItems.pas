@@ -2494,7 +2494,7 @@ begin
   for i := 0 to length(rec) - 1 do
     Result := Result + IntToStr(rec[i].ID) + ':' + rec[i].Items + ';';
 
-  Result := Copy(Result, 1, length(Result ) - 1);
+  Result := Copy(Result, 1, length(Result) - 1);
 end;
 
 end.
