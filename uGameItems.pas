@@ -243,6 +243,22 @@ type
     property ResourcesCount: integer read GetResourcesCount;
   end;
 
+  TMFieldBusDepot = class (TMFieldFactory)
+  private
+    function GetPassengersCount: integer;
+    function GetPassengersList: string;
+  public
+    function GetActionDT(canTick, canWork: boolean): TDateTime; override;
+    procedure Execute(canTick, canWork: boolean); override;
+  end;
+
+  TMFieldMobilePhone = class (TMFieldFactory)
+  private
+    function GetAffectedList: string;
+  public
+    procedure Execute(canTick, canWork: boolean); override;
+  end;
+
   TBarnRec = packed record
     Name: String;
     ID: Cardinal;
@@ -2095,10 +2111,6 @@ begin
           elm.AddAttr('klass', PutKlass);
         end;
 
-  {???  сотовая связь
-      FClFields[length(FClFields) - 1].Affected :=
-        CalcFactoryAffecting(st, st.fields[i]);
-  ??? }
         ChangeState(STATE_WORK);
       end;
     end;
@@ -2330,6 +2342,159 @@ begin
   for i := 0 to length(FMiningItems) - 1 do
     Result := Result +
       FRoom.FWorld.GetBarnCount(FRoom.FWorld.GetBarnGameItemID(FMiningItems[i].Name));
+end;
+
+{ TMFieldBusDepot }
+
+procedure TMFieldBusDepot.Execute(canTick, canWork: boolean);
+var
+  elm: TActionQueueElm;
+  field: TMField;
+begin
+  if canTick or
+     (canWork and (State <> STATE_STANDBY)) then
+  begin
+    inherited;
+    exit;
+  end;
+
+  if canWork then
+    if (State = STATE_STANDBY) and
+       (GameItem.canPut) and
+       (PutKlass <> '') and
+       (GetPassengersCount > 4000)
+    then
+    begin
+      elm := Qu.Add(Room.ID, ID, Name, faPut, 0);
+      elm.AddAttr('klass', PutKlass);
+      elm.AddAttr('affected_items', GetPassengersList);
+      field := FRoom.GetField('institute_of_transport_');
+      if field <> nil then
+        elm.AddAttr('institute', field.ID);
+
+      ChangeState(STATE_WORK);
+    end;
+end;
+
+function TMFieldBusDepot.GetActionDT(canTick, canWork: boolean): TDateTime;
+begin
+  Result := 0;
+
+  if canTick or
+     (canWork and (State <> STATE_STANDBY)) then
+  begin
+    Result := inherited;
+    exit;
+  end;
+
+  if canWork then
+    if (State = STATE_STANDBY) and
+       (GameItem.canPut) and
+       (PutKlass <> '') and
+       (GetPassengersCount > 4000)
+    then
+      Result := Now - 1;
+end;
+
+function TMFieldBusDepot.GetPassengersCount: integer;
+var
+  i: Integer;
+begin
+  Result := 0;
+  for i := 0 to length(FRoom.FItems) - 1 do
+    if (Pos('bus_stop', FRoom.FItems[i].Name) = 1) then
+      Result := Result + StrToIntDef(FRoom.FItems[i].OutputFill, 0);
+end;
+
+function TMFieldBusDepot.GetPassengersList: string;
+var
+  i: Integer;
+begin
+  Result := '';
+
+  for i := 0 to length(FRoom.FItems) - 1 do
+    if (Pos('bus_stop', FRoom.FItems[i].Name) = 1) then
+      Result := Result + IntToStr(FRoom.FItems[i].ID) + ':' +
+        IntToStr(StrToIntDef(FRoom.FItems[i].OutputFill, 0)) + ';';
+
+  Result := Copy(Result, 1, length(Result) - 1);
+end;
+
+{ TMFieldMobilePhone }
+
+procedure TMFieldMobilePhone.Execute(canTick, canWork: boolean);
+var
+  elm: TActionQueueElm;
+begin
+  if canTick or
+     (canWork and (State <> STATE_STANDBY)) then
+  begin
+    inherited;
+    exit;
+  end;
+
+  if canWork then
+    if (State = STATE_STANDBY) and
+       (GameItem.canPut) and
+       (PutKlass <> '')
+    then
+    begin
+      elm := Qu.Add(Room.ID, ID, Name, faPut, 0);
+      elm.AddAttr('klass', PutKlass);
+      elm.AddAttr('affected_items', GetAffectedList);
+
+      ChangeState(STATE_WORK);
+    end;
+end;
+
+function TMFieldMobilePhone.GetAffectedList: string;
+var
+  s,
+  aItemSClass: string;
+  i,
+  j: integer;
+  t: TowerRec;
+  rec: array of TowerRec;
+begin
+  Result := '';
+  SetLength(rec, 0);
+
+  aItemSClass := 'mobile_phone_communication_tower';
+
+  //  fill towers array
+  for i := 0 to length(FRoom.FItems) - 1 do
+    if FRoom.FItems[i].GameItem.SuperClass = aItemSClass then
+    begin
+      SetLength(rec, length(rec) + 1);
+      rec[length(rec) - 1].ID := FRoom.FItems[i].ID;
+      rec[length(rec) - 1].TowerPosition := FRoom.FItems[i].BuildingPosition;
+      rec[length(rec) - 1].Items := '';
+
+      s := '';
+      for j := 0 to length(FRoom.FItems) - 1 do
+        if (FRoom.FItems[j].GameItem.GetAttr('buff_mobile').AsBoolean) and
+           (FRoom.FItems[j].inAreaOf(FRoom.FItems[i]))
+        then
+          s := s + IntToStr(FRoom.FItems[j].ID) + ',';
+
+      rec[length(rec) - 1].Items := Copy(s, 1, length(s) - 1);
+    end;
+
+  // sort towers array
+  for i := 0 to length(rec) - 1 do
+    for j := i + 1 to length(rec) - 1 do
+      if rec[i].TowerPosition > rec[j].TowerPosition then
+      begin
+        t := rec[i];
+        rec[i] := rec[j];
+        rec[j] := t;
+      end;
+
+  // print towers array
+  for i := 0 to length(rec) - 1 do
+    Result := Result + IntToStr(rec[i].ID) + ':' + rec[i].Items + ';';
+
+  Result := Copy(Result, 1, length(Result ) - 1);
 end;
 
 end.

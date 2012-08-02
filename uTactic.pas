@@ -126,8 +126,8 @@ begin
   // получается приход - 4 топлава в час, а расход углем и рудой 2,22 в час
   // остальное пока в ручном режиме...  при такой стратегии не работает запрос топлива у друзей(
   if (StrToIntDef(FRoom.Header.GetRoomResource('fuel'), 0) < 70) and
-     (Contract.GetAttr('produce_material') <> 'coal') and
-     (Contract.GetAttr('produce_material') <> 'iron_ore')
+     (Contract.GetAttr('produce_material').AsString <> 'coal') and
+     (Contract.GetAttr('produce_material').AsString <> 'iron_ore')
   then exit;
 
   if Exec then

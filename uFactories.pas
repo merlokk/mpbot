@@ -170,6 +170,18 @@ begin
     exit;
   end;
 
+  if Pos('bus_depot_', name) = 1 then
+  begin
+    Result := TMFieldBusDepot.Create;
+    exit;
+  end;
+
+  if Pos('mobile_phone_system_center_', name) = 1 then
+  begin
+    Result := TMFieldMobilePhone.Create;
+    exit;
+  end;
+
   case item.ItemType of
     gitPlace: Result := TMFieldPlace.Create;
     gitFactory:

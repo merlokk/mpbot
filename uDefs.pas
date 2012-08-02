@@ -76,6 +76,12 @@ type
     procedure Clear;
   end;
 
+  TowerRec = packed record
+    ID,
+    TowerPosition: Int64;
+    Items: String;
+  end;
+
   TSendGiftRec = packed record
     ID: int64;
     GameItemID: integer;
