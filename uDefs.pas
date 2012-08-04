@@ -7,7 +7,7 @@ uses
 type
   TFieldAction = (faNone, faClean, faPick, faPut, faTick,
     faRemoveWishList, faAddWishList, faHelp, faSendGift, faMassSendGift,  faSendRequest,
-    faSellBarn, faConfirmFriendsIds,
+    faSellBarn, faConfirmFriendsIds, faPickObject, faPutObject,
     faLast);
 
 const
@@ -34,12 +34,12 @@ const
     ('', 'clean', 'pick', 'put', 'tick',
      'remove_from_wish_list', 'add_to_wish_list', 'help',
      'send_gift', 'mass_send_gift', 'send_request', 'sell_barn',
-     'confirm_friends_ids',
+     'confirm_friends_ids', 'pick_object', 'put_object',
      '');
   FA_STR_STAT: array [faNone..faLast] of string =
     ('', 'cln', 'pick', 'put', 'tick',
      'remwl', 'addwl', 'hlp', 'gift', 'mgift', 'req', 'sellB',
-     'cfriend',
+     'cfriend', 'pickO', 'putO',
      '');
 
   GUARD_TIME = 60 / SecsPerDay; // 60 sec

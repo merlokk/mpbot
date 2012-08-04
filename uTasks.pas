@@ -715,6 +715,8 @@ var
 begin
   inherited;
 
+  AddLog('>>> WorldUpdate started.');
+
   world := TMWorld.GetInstance;
   FMPServ.GetRevision(world);
 
@@ -722,6 +724,7 @@ begin
   // first request to MP server
   FMPServ.GetUserStat(world, 0, true);
   room0 := world.GetRoom(0);
+  room := room0;
 
   for i := 1 to world.GetRoomCount - 1 do
   begin
@@ -732,6 +735,8 @@ begin
     FMPServ.GetUserStat(world, i);
   end;
 
+  sleep(2000);
+  AddLog('command: confirm_friends >>>');
   elm := FQu.Add(room.ID, 0, 'confirm_friends', faConfirmFriendsIds);
   elm.AddAttr('friends_ids', FVK.GetAppFriends);
   FMPServ.CheckAndPerform(world, FQu);
@@ -802,6 +807,7 @@ begin
       FTaskExec.ExecuteTask(ttProcessGifts);
   end;
 
+  AddLog('>>> WorldUpdate completed.');
   // place for testing
 //  TTacticFactory.GetInstance.GetTactic(1).CanExecuteContract(
 //    TItemsFactory.GetInstance.GetGameItem(16111));

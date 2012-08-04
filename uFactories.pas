@@ -182,6 +182,12 @@ begin
     exit;
   end;
 
+  if Pos('coast_hotel_', name) = 1 then
+  begin
+    Result := TMFieldCoastHotel.Create;
+    exit;
+  end;
+
   case item.ItemType of
     gitPlace: Result := TMFieldPlace.Create;
     gitFactory:

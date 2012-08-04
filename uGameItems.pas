@@ -145,7 +145,8 @@ type
     ContractOutput,
     InputFill,
     OutputFill: string;
-    ProcessEnd: cardinal;
+    ProcessEnd,
+    PickProcessEnd: cardinal;
     BuildingPosition: Int64;
     ExtraValue: cardinal;
 
@@ -256,6 +257,13 @@ type
   private
     function GetAffectedList: string;
   public
+    procedure Execute(canTick, canWork: boolean); override;
+  end;
+
+  TMFieldCoastHotel = class (TMFieldFactory)
+  private
+  public
+    function GetActionDT(canTick, canWork: boolean): TDateTime; override;
     procedure Execute(canTick, canWork: boolean); override;
   end;
 
@@ -1565,6 +1573,7 @@ begin
   InputFill := '';
   OutputFill := '';
   ProcessEnd := 0;
+  PickProcessEnd := 0;
   BuildingPosition := 0;
   ExtraValue := 0;
 
@@ -2390,10 +2399,14 @@ begin
   if canWork then
     if (State = STATE_STANDBY) and
        (GameItem.canPut) and
-       (PutKlass <> '') and
-       (GetPassengersCount > 4000)
+       (PutKlass <> '')
     then
-      Result := Now - 1;
+    begin
+      if GetPassengersCount > 4000 then
+        Result := Now - 1
+      else
+        Result := 0;
+    end;
 end;
 
 function TMFieldBusDepot.GetPassengersCount: integer;
@@ -2495,6 +2508,20 @@ begin
     Result := Result + IntToStr(rec[i].ID) + ':' + rec[i].Items + ';';
 
   Result := Copy(Result, 1, length(Result) - 1);
+end;
+
+{ TMFieldCoastHotel }
+
+procedure TMFieldCoastHotel.Execute(canTick, canWork: boolean);
+begin
+  inherited;
+
+end;
+
+function TMFieldCoastHotel.GetActionDT(canTick, canWork: boolean): TDateTime;
+begin
+  Result := inherited;
+
 end;
 
 end.

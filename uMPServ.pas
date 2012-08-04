@@ -1003,6 +1003,7 @@ begin
     Rotated := VarToBoolDef(node.Attributes['rotation'], false);
     BuildingPosition := VarToInt64Def(node.Attributes['building_position'], 0);
     ProcessEnd := VarToIntDef(node.Attributes['process_end'], 0);
+    PickProcessEnd := VarToIntDef(node.Attributes['pick_process_end'], 0);
     ExtraValue := VarToIntDef(node.Attributes['extra_value'], 0);
 
     GameItem := TItemsFactory.GetInstance.GetGameItem(Name);
