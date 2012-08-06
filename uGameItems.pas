@@ -2156,6 +2156,7 @@ begin
     Result := GetProcessEndDT;
 
   if canWork and
+    (
      ( (State = STATE_ABANDONED) and
        ((ContractOutput <> '') or
         (OutputFill <> '')
@@ -2168,6 +2169,7 @@ begin
      ) or
      (State = STATE_DIRTY) or
      (State = STATE_EXPIRED)
+    )
   then
     Result := Now - 1;
 end;
@@ -2389,8 +2391,8 @@ function TMFieldBusDepot.GetActionDT(canTick, canWork: boolean): TDateTime;
 begin
   Result := 0;
 
-  if canTick or
-     (canWork and (State <> STATE_STANDBY)) then
+  if (canTick or canWork ) and
+     (State <> STATE_STANDBY) then
   begin
     Result := inherited;
     exit;
