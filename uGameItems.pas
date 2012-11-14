@@ -246,6 +246,7 @@ type
 
   TMFieldBusDepot = class (TMFieldFactory)
   private
+    function canExecute: boolean;
     function GetPassengersCount: integer;
     function GetPassengersList: string;
   public
@@ -2357,6 +2358,11 @@ end;
 
 { TMFieldBusDepot }
 
+function TMFieldBusDepot.canExecute: boolean;
+begin
+  Result := GetPassengersCount > 1900;
+end;
+
 procedure TMFieldBusDepot.Execute(canTick, canWork: boolean);
 var
   elm: TActionQueueElm;
@@ -2368,12 +2374,12 @@ begin
     inherited;
     exit;
   end;
-
+     {
   if canWork then
     if (State = STATE_STANDBY) and
        (GameItem.canPut) and
        (PutKlass <> '') and
-       (GetPassengersCount > 4000)
+       (canExecute)
     then
     begin
       elm := Qu.Add(Room.ID, ID, Name, faPut, 0);
@@ -2384,7 +2390,7 @@ begin
         elm.AddAttr('institute', field.ID);
 
       ChangeState(STATE_WORK);
-    end;
+    end;         }
 end;
 
 function TMFieldBusDepot.GetActionDT(canTick, canWork: boolean): TDateTime;
@@ -2398,17 +2404,17 @@ begin
     exit;
   end;
 
-  if canWork then
+{  if canWork then
     if (State = STATE_STANDBY) and
        (GameItem.canPut) and
        (PutKlass <> '')
     then
     begin
-      if GetPassengersCount > 4000 then
+      if canExecute then
         Result := Now - 1
       else
         Result := 0;
-    end;
+    end;   }
 end;
 
 function TMFieldBusDepot.GetPassengersCount: integer;
