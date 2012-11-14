@@ -213,7 +213,8 @@ begin
 
   // расходная часть бюджета
   if (Pos('aquapark_', Field.Name) = 1) or
-     (Pos('ancient_fort_', Field.Name) = 1)then
+     (Pos('ancient_fort_', Field.Name) = 1) or
+     (Pos('observatory_', Field.Name) = 1) then
   begin
     // нужно туристов для контракта
     ToгristsNeeded := Contract.GetAllStatesParamInt(

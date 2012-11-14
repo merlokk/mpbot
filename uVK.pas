@@ -220,7 +220,6 @@ begin
   try
     clHTTP.Get(
       'https://vk.com/', sl);
-    sl.SaveToFile('d:\1.html');
 
     s := Copy(sl.Text, Pos('id="quick_login_form"', sl.Text) + 21, length(sl.Text));
     s := Copy(s, Pos('"ip_h"', s) + 6, length(s));
@@ -237,13 +236,12 @@ begin
     clHttpRequest2.AddFormField('_origin', 'https://vk.com');
     clHttpRequest2.AddFormField('ip_h', s);
     clHttpRequest2.AddFormField('email', FUserName);
-    clHttpRequest2.AddFormField('pass', 'close all');
+    clHttpRequest2.AddFormField('pass', FPassword);
 
     clHTTP.Post(
       'https://login.vk.com/?act=login',
       clHttpRequest2,
       sl);
-    sl.SaveToFile('d:\2.html');
 
     res := '';
     if Pos('onlogindone', AnsiLowerCase(sl.Text)) > 0 then
@@ -254,7 +252,6 @@ begin
       clHTTP.Get(
       'https://vk.com/app' + FAppID,
       sl);
-    sl.SaveToFile('d:\3.html');
 
       if Pos('"access_token"', sl.Text) > 0 then
       begin

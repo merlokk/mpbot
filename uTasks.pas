@@ -726,6 +726,13 @@ begin
   room0 := world.GetRoom(0);
   room := room0;
 
+  sleep(1000);
+  AddLog('command: confirm_friends >>>');
+  elm := FQu.Add(room.ID, 0, 'confirm_friends', faConfirmFriendsIds);
+  elm.AddAttr('friends_ids', FVK.GetAppFriends);
+  FMPServ.CheckAndPerform(world, FQu);
+
+  sleep(1000);
   for i := 1 to world.GetRoomCount - 1 do
   begin
     room := world.GetRoom(i);
@@ -734,12 +741,6 @@ begin
     sleep(2000);
     FMPServ.GetUserStat(world, i);
   end;
-
-  sleep(2000);
-  AddLog('command: confirm_friends >>>');
-  elm := FQu.Add(room.ID, 0, 'confirm_friends', faConfirmFriendsIds);
-  elm.AddAttr('friends_ids', FVK.GetAppFriends);
-  FMPServ.CheckAndPerform(world, FQu);
 
   // update friends
   FVK.UpdateFriendsDetails(world.Friends);
