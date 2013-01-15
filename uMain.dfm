@@ -146,6 +146,12 @@ object MainFrm: TMainFrm
         Width = 75
         Height = 25
         Caption = 'Load'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clPurple
+        Font.Height = -13
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
         TabOrder = 5
         OnClick = btParamLoadClick
       end

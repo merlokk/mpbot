@@ -726,6 +726,8 @@ begin
   room0 := world.GetRoom(0);
   room := room0;
 
+  TActionQueue.GetInstance.RollCounter := world.LastHeader.RollCounter;
+
   sleep(1000);
   AddLog('command: confirm_friends >>>');
   elm := FQu.Add(room.ID, 0, 'confirm_friends', faConfirmFriendsIds);

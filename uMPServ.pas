@@ -217,7 +217,7 @@ begin
   clHttpRequest.Header.AcceptEncoding := 'gzip,deflate,sdch';
   clHttpRequest.Header.AcceptCharSet := 'windows-1251,utf-8;q=0.7,*;q=0.3';
   clHttpRequest.Header.AcceptLanguage := 'ru-RU,ru;q=0.8,en-US;q=0.6,en;q=0.4';
-  clHttpRequest.Header.Referer := 'http://cs6151.vkontakte.ru/u6148904/2432d91261070e.zip';
+  clHttpRequest.Header.Referer := 'http://cs6176.vkontakte.ru/[[IMPORT]]/mb.static.socialquantum.ru/assets_vk_city_prod/loader.swf?refs=1358241303';
   clHttpRequest.Header.UserAgent := 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/536.11 (KHTML, like Gecko) Chrome/20.0.1132.57 Safari/536.11';
 
   clHttpRequest2 := TclHttpRequest.Create(Nil);
@@ -770,6 +770,9 @@ begin
 
     // process header
     LastHeader.ProcessResponseHeader(root);
+    if LastHeader.RollCounter > TActionQueue.GetInstance.RollCounter then
+      TActionQueue.GetInstance.RollCounter := LastHeader.RollCounter;
+
     if room.ID <> LastHeader.RoomID then exit;
     room.Header := LastHeader;
 
@@ -835,6 +838,7 @@ begin
     if OwnerID <= 0 then exit;
 
     // my world
+    RollCounter := VarToIntDef(root.Attributes['roll_counter'], 0);
     NextTick := VarToIntDef(root.Attributes['next_tick'], 0);
     WishListStr := VarToStr(root.Attributes['wish_list']);
     Population := VarToIntDef(root.Attributes['population'], 0);

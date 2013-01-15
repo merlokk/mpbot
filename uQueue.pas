@@ -40,7 +40,8 @@ type
      FQuElm: array of TActionQueueElm;
    public
      OwnerID,
-     CurrentXP: int64;
+     CurrentXP,
+     RollCounter: int64;
 
      class function GetInstance: TActionQueue;
      constructor Create;
@@ -140,7 +141,7 @@ begin
     AddCached(i, 'room_id', IntToStr(FQuElm[i].RoomID));
     AddCached(i, 'ago', IntToStr(ago));
     AddCached(i, 'command', FA_STR[FQuElm[i].AType]);
-    AddCached(i, 'roll_counter', '1');
+    AddCached(i, 'roll_counter', IntToStr(RollCounter));
     AddCached(i, 'exp', IntToStr(CurrentXP));
     CurrentXP := CurrentXP + FQuElm[i].DeltaXP;
 

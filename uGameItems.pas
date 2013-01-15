@@ -279,6 +279,7 @@ type
   end;
 
   TWorldHeader = packed record
+    RollCounter: int64;
     NextTick: cardinal;
     RoomInformation,
     WishListStr: String;

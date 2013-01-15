@@ -124,10 +124,10 @@ var
  maxItems,
  delta,
  tall: integer;
- data: array[0..2] of TFieldGraf;
+ data: array[0..3] of TFieldGraf;
  room: TMRoom;
 begin
-  for i := 0 to 2 do
+  for i := 0 to 3 do
   begin
     room := world.GetRoom(i);
     if room = nil then continue;
@@ -146,6 +146,7 @@ begin
     maxItems := Max(maxItems, data[0][i]);
     maxItems := Max(maxItems, data[1][i]);
     maxItems := Max(maxItems, data[2][i]);
+    maxItems := Max(maxItems, data[3][i]);
   end;
 
   if maxItems = 0 then exit;
@@ -167,23 +168,31 @@ begin
       cnv.FillRect(Rect(
         i * delta + 4,
         tall - max(Trunc(data[0][i] / maxItems * tall), 1),
-        i * delta + 4 + (delta div 3 - 1),
+        i * delta + 4 + (delta div 4 - 1),
         tall));
 
     cnv.Brush.Color := clOlive;
     if data[1][i] > 0 then
       cnv.FillRect(Rect(
-        i * delta + 4 + (delta div 3),
+        i * delta + 4 + (delta div 4),
         tall - max(Trunc(data[1][i] / maxItems * tall), 1),
-        i * delta + 4 + ((delta div 3)*2 - 1),
+        i * delta + 4 + ((delta div 4)*2 - 1),
         tall));
 
     cnv.Brush.Color := clNavy;
     if data[2][i] > 0 then
       cnv.FillRect(Rect(
-        i * delta + 4 + (delta div 3)*2,
+        i * delta + 4 + (delta div 4)*2,
         tall - max(Trunc(data[2][i] / maxItems * tall), 1),
-        i * delta + 4 + ((delta div 3)*3 - 1),
+        i * delta + 4 + ((delta div 4)*3 - 1),
+        tall));
+
+    cnv.Brush.Color := clPurple;
+    if data[3][i] > 0 then
+      cnv.FillRect(Rect(
+        i * delta + 4 + (delta div 4)*3,
+        tall - max(Trunc(data[2][i] / maxItems * tall), 1),
+        i * delta + 4 + ((delta div 4)*4 - 1),
         tall));
   end;
 
