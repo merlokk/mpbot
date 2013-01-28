@@ -17,7 +17,7 @@ const
     'ASVARCHAR',
     'ASFLOAT');
 
-  PPL_GUARD_SPACE = 2000;   // population guard space
+  PPL_GUARD_SPACE = 5000;   // population guard space
 type
   TMWorld = class;
   TMRoom = class;
