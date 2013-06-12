@@ -1034,7 +1034,7 @@ begin
         ExecContract := TMPdatabase.GetInstance.GetExecContract(Name);
         PutGameItem := TItemsFactory.GetInstance.GetGameItem(ExecContract.Klass);
         if ExecContract.TacticID <> 0 then
-          TMFieldFactory(Result).Tactic := TTacticFactory.GetInstance.GetTactic(ExecContract.TacticID);
+          TMFieldFactoryWithHelp(Self).Tactic := TTacticFactory.GetInstance.GetTactic(ExecContract.TacticID);
       end;
 
     LastUpdate := Now;

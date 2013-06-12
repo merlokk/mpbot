@@ -216,7 +216,10 @@ var
 begin
   Result := -1;
   GItem := TItemsFactory.GetInstance.GetGameItem(id);
-  if (GItem.ID = 0) or (GItem.ShopDept <> 'materials') then exit;
+  if (GItem.ID = 0) or
+     (GItem.ShopDept <> 'materials') or
+     (GItem.GetAttr('exclude_from_need_materials').AsBoolean = true)
+  then exit;
 
   SetLength(WList, length(WList) + 1);
   Result := length(WList) - 1;

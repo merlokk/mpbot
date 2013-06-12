@@ -116,6 +116,7 @@ type
     procedure FillListFromWorld(world: TMWorld);
 
     function GetWlStr: string;
+    function isBuildingDeny(field: TMField): boolean;
   public
     constructor Create; override;
     procedure IntExecute; override;
@@ -1052,6 +1053,8 @@ var
   sl: TStringList;
   gi: TMGameItem;
 begin
+  if isBuildingDeny(field) then exit;
+
   sl := TStringList.Create;
   sl.NameValueSeparator := ':';
   sl.Delimiter := ',';
@@ -1062,7 +1065,8 @@ begin
     gi := TItemsFactory.GetInstance.GetGameItem(sl.Names[i]);
     if (gi = nil) or
        (gi.ID <= 0) or
-       (gi.ShopDept <> 'materials')
+       (gi.ShopDept <> 'materials') or
+       (gi.GetAttr('exclude_from_need_materials').AsBoolean = true)
     then continue;
 
     cnt := StrToIntDef(sl.ValueFromIndex[i], 1) -
@@ -1156,6 +1160,8 @@ begin
     for i := 0 to room.FieldsCount - 1 do
     begin
       field := room.GetFieldI(i);
+      if isBuildingDeny(field) then continue;
+
       if (field = nil) or (field.GameItem = nil) then continue;
       if (field.GameItem.isBuildSite) and
          (field.GameItem.MaterialQty <> '') and
@@ -1281,6 +1287,12 @@ begin
     FMPServ.CheckAndPerform(world, FQu);
     FQu.Clear;
   end;
+end;
+
+function TMTaskWhishListUpdate.isBuildingDeny(field: TMField): boolean;
+begin
+  Result := false;
+  if Pos('elven_', field.Name) <> 0 then Result := true;
 end;
 
 function TMTaskWhishListUpdate.isNeededWlFull: boolean;
